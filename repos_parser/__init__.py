@@ -28,15 +28,25 @@ def copy_file(src, dst, MPI_functions):
         json.dump(MPI_functions, f, indent=4)
 
 
-def MPI_func_included(contents):
+def is_print_included(line, ext):
+    if ext in FORTRAN_EXTENSIONS:
+        return 'print' in line
+    else:
+        return ('printf' in line) or ('cout' in line)
+
+
+def mpi_func_included(lines, ext='.c'):
     funcs_count = {}
-    MPI_funcs = re.findall('MPI_\w*', contents)  # \S* for all the function
-    for func in MPI_funcs:
+    funcs = []
+    for line in lines:
+        if not is_print_included(line, ext):
+            funcs += re.findall('MPI_\w*', line)  # \S* for all the function
+    for func in funcs:
         funcs_count[func] = (funcs_count[func] if func in funcs_count else 0) + 1
     return funcs_count
 
 
-def MPI_included(line, language='c'):
+def mpi_included(line, language='c'):
     line = str(line).lower()
     if language == 'c':
         return '#include' in line and 'mpi.h' in line
@@ -51,7 +61,7 @@ class Repo:
 
         self.root_dir = os.path.join(repos_dir, repo_name)
         self.json_structure_init()
-        self.repo_include = False
+        self.included = False
 
     def json_structure_init(self):
         self.repo_info = {self.repo_name: {'types': {}, 'scripts': {}}}
@@ -68,16 +78,16 @@ class Repo:
                 extension = os.path.splitext(file_name)[1].lower()
                 if extension in EXTENSIONS:
                     path = os.path.join(root, file_name)
-                    with open(path, 'rb') as f:
-                        contents = str(f.read())
+                    with open(path) as f:
+                        lines = f.readlines()
 
-                    MPI_funcs = MPI_func_included(contents)
-                    if MPI_funcs:
-                        self.repo_include = True
+                    mpi_funcs = mpi_func_included(lines, extension)
+                    if mpi_funcs:
+                        self.included = True
                         if self.copy:
-                            copy_file(path, REPOS_MPI_DIR, MPI_funcs)
+                            copy_file(path, REPOS_MPI_DIR, mpi_funcs)
                         self.update_type_counter(extension)
-                        self.repo_scripts[file_name]['funcs'] = MPI_funcs
+                        self.repo_scripts[file_name]['funcs'] = mpi_funcs
                         break
 
             if idx % 10 ** 3 == 0:
