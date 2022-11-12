@@ -4,21 +4,31 @@ import shutil
 import json
 
 
-from repos_parser import repos_dir, repos_mpi_dir, extentions, fortran_extentions, start_idx
+from repos_parser import REPOS_ORIGIN_DIR, REPOS_MPI_DIR, EXTENSIONS, FORTRAN_EXTENSIONS, START_IDX, write_to_json
 
 
-def copy_file(src, dst):
+def copy_file(src, dst, MPI_functions):
     '''
     copy src file to a given destination (preserve the file structure)
     '''
-    src = src[start_idx:]
+    src = src[START_IDX:]
     dst = os.path.join(dst, src)
     dstfolder = os.path.dirname(dst)
 
     if not os.path.exists(dstfolder):
         os.makedirs(dstfolder)
 
-    shutil.copy(os.path.join(repos_dir, src), dst)
+    shutil.copy(os.path.join(REPOS_ORIGIN_DIR, src), dst)
+    with open(f'{dst}.json', "w") as f:
+        json.dump(MPI_functions, f, indent=4)
+
+
+def MPI_func_included(contents):
+    funcs_count = {}
+    MPI_funcs = re.findall('MPI_\w*', contents)  # \S* for all the function
+    for func in MPI_funcs:
+        funcs_count[func] = (funcs_count[func] if func in funcs_count else 0) + 1
+    return funcs_count
 
 
 def MPI_included(line, language='c'):
@@ -28,29 +38,34 @@ def MPI_included(line, language='c'):
     return 'include' in line and 'mpif.h' in line
 
 
+def update_type_counter(ext):
+    type_counter[ext] = (type_counter[ext] if ext in type_counter else 0) + 1
+
+
 def scan_dir(root_dir):
     for idx, (root, dirs, files) in enumerate(os.walk(root_dir)):
         for file_name in files:
-            copy = False
-            ext = os.path.splitext(file_name)[1].lower()
+            extension = os.path.splitext(file_name)[1].lower()
 
-            if ext in extentions:
-                with open(f'{root}/{file_name}', 'rb') as f:
-                    for line in f:
-                        if MPI_included(line, 'c' if ext not in fortran_extentions else 'f'):
-                            copy = True
-                            result[ext] = (result[ext] if ext in result else 0) + 1
+            if extension in EXTENSIONS:
+                path = os.path.join(root, file_name)
+                with open(path, 'rb') as f:
+                    contents = str(f.read())
 
-                        if copy:
-                            copy_file(os.path.join(root, file_name), repos_mpi_dir)
-                            break
+                MPI_funcs = MPI_func_included(contents)
+                if MPI_funcs:
+                    # write_to_json(data=MPI_funcs, path=repos_mpi_dir)
+                    update_type_counter(extension)
+                    copy_file(path, REPOS_MPI_DIR, MPI_funcs)
+                    break
 
         if idx % 10 ** 3 == 0:
-            print(f'{idx}) {result}')
+            print(f'{idx}) {type_counter}')
 
 
-result = {}
-for dir in os.listdir(repos_dir):
-    scan_dir(os.path.join(repos_dir, dir))
+
+type_counter = {}
+for dir in os.listdir(REPOS_ORIGIN_DIR):
+    scan_dir(os.path.join(REPOS_ORIGIN_DIR, dir))
 with open('extractor_logger.txt', 'w') as f:
-    f.write(str(result))
+    f.write(str(type_counter))
