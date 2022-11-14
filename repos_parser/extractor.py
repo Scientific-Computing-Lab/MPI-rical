@@ -3,20 +3,21 @@ import os
 from repos_parser import Repo, write_to_json, REPOS_ORIGIN_DIR, REPOS_MPI_DIR
 
 
-NEW_DATABASE = False
+NEW_DATABASE = True
 copy = False
 repos_dir = REPOS_MPI_DIR
 if NEW_DATABASE:
     copy = True
-    global_types = {}
     repos_dir = REPOS_ORIGIN_DIR
 
 
-def info_scraping():
+def scrap():
     database_info = {}
-    for repo_name in os.listdir(repos_dir):
+    for idx, repo_name in enumerate(os.listdir(repos_dir)):
+        print(repo_name)
         repo = Repo(repo_name=repo_name,
                     repos_dir=repos_dir,
+                    idx=idx,
                     copy=copy)
         repo.scan_repo()
         if repo.included:
@@ -31,4 +32,4 @@ def slice_code():
                     copy=copy)
         repo.init_final_slice()
 
-slice_code()
+scrap()

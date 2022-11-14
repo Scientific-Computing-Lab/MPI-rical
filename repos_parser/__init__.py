@@ -9,6 +9,7 @@ from datetime import date
 REPOS_ORIGIN_DIR = '/home/nadavsc/LIGHTBITS/data_gathering_script/git_repos'
 REPOS_MPI_DIR = '/home/nadavsc/LIGHTBITS/code2mpi/repositories_MPI'
 EXTENSIONS = ['.c', '.f', '.f77', '.f90', '.f95', '.f03', '.cc', '.cpp', '.cxx', '.h']
+START_IDX = len(os.path.join(os.getcwd(), REPOS_ORIGIN_DIR)) + 1
 FORTRAN_EXTENSIONS = ['.f', '.f77', '.f90', '.f95', '.f03']
 script_types = {}
 
@@ -18,12 +19,11 @@ def write_to_json(data, path):
         time = date.today().strftime("%m_%d_%y")
         path = re.sub("database\w*", f"database_info_{time}", path)
 
-    with open(f'{path}.json', "w") as f:
+    with open(path, "w") as f:
         json.dump(data, f, indent=4)
 
 
 def copy_file(src, dst, MPI_functions):
-    START_IDX = len(os.path.join(os.getcwd(), dst)) + 1
     src = src[START_IDX:]
     dst = os.path.join(dst, src)
     dstfolder = os.path.dirname(dst)
@@ -62,10 +62,27 @@ def mpi_included(line, language='c'):
     return 'include' in line and 'mpif.h' in line
 
 
+def get_extension(filename):
+    return os.path.splitext(filename)[1].lower()
+
+
 class Database:
     def __init__(self, database_path=None):
         if database_path:
             self.database = self.load_database(database_path)
+        else:
+            self.write_database_json()
+
+    def write_database_json(self):
+        database_info = {}
+        for idx, repo_name in enumerate(os.listdir(REPOS_MPI_DIR)):
+            repo = Repo(repo_name=repo_name,
+                        repos_dir=REPOS_MPI_DIR,
+                        idx=idx,
+                        copy=False)
+            repo.scan_repo()
+            database_info[repo_name] = repo.repo_info[repo_name]
+        write_to_json(database_info, 'database.json')
 
     def load_database(self, path):
         with open(path, 'r') as f:
@@ -84,12 +101,24 @@ class Database:
                 counter.update(script['funcs'])
         return dict(counter)
 
+    def is_remove(self, fname):
+        if get_extension(fname) in EXTENSIONS:
+            return re.search('_slice', fname)
+        return True
+
+    def clear(self):
+        for (root, dirs, fnames) in os.walk(REPOS_MPI_DIR):
+            for fname in fnames:
+                if self.is_remove(fname):
+                    os.remove(os.path.join(root, fname))
+
 
 class Repo:
-    def __init__(self, repo_name, repos_dir, copy=False):
+    def __init__(self, repo_name, repos_dir, idx, copy=False):
         self.repo_name = repo_name
         self.repos_dir = repos_dir
         self.copy = copy
+        self.idx = idx
 
         self.root_dir = os.path.join(repos_dir, repo_name)
         self.json_structure_init()
@@ -104,12 +133,12 @@ class Repo:
         self.repo_script_types[ext] = (self.repo_script_types[ext] if ext in self.repo_script_types else 0) + 1
 
     def scan_repo(self):
-        for idx, (root, dirs, files) in enumerate(os.walk(self.root_dir)):
-            for file_name in files:
-                self.repo_scripts[file_name] = {'funcs': {}}
-                extension = os.path.splitext(file_name)[1].lower()
+        for idx, (root, dirs, fnames) in enumerate(os.walk(self.root_dir)):
+            for fname in fnames:
+                self.repo_scripts[fname] = {'funcs': {}}
+                extension = get_extension(fname)
                 if extension in EXTENSIONS:
-                    path = os.path.join(root, file_name)
+                    path = os.path.join(root, fname)
                     with open(path, 'rb') as f:
                         lines = f.readlines()
 
@@ -119,23 +148,22 @@ class Repo:
                         if self.copy:
                             copy_file(path, REPOS_MPI_DIR, mpi_funcs)
                         self.update_type_counter(extension)
-                        self.repo_scripts[file_name]['funcs'] = mpi_funcs
+                        self.repo_scripts[fname]['funcs'] = mpi_funcs
                         script_types[extension] = (script_types[extension] if extension in script_types else 0) + 1
                         break
-
-            if idx % 10 ** 3 == 0:
-                print(f'{idx}) {script_types}')
+        print(f'{self.idx}) {script_types}')
 
     def init_final_slice(self):
-        for idx, (root, dirs, files) in enumerate(os.walk(self.root_dir)):
-            for file_name in files:
-                script_name, extension = os.path.splitext(file_name)
-                path = os.path.join(root, file_name)
+        for idx, (root, dirs, fnames) in enumerate(os.walk(self.root_dir)):
+            for fname in fnames:
+                script_name, extension = os.path.splitext(fname)
+                path = os.path.join(root, fname)
                 with open(path, 'rb') as f:
                     contents = str(f.read())
 
                 match = re.search(r'\b *mpi_init\b.+\bmpi_finalize\b', contents.lower())
                 if match:
+                    print(f'{fname} matched')
                     start_idx, end_idx = match.span()
                     contents = contents[start_idx:end_idx]
                     contents = re.sub(r"\\n", "\n", contents)
