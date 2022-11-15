@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import os
 import json
 
-from repos_parser import Database
+from database import Database
 
 database = Database('database.json')
 funcs_counter = database.total_mpi_functions()

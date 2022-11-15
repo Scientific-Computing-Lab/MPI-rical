@@ -1,6 +1,7 @@
 import os
 
-from repos_parser import Repo, write_to_json, REPOS_ORIGIN_DIR, REPOS_MPI_DIR
+from repos_parser import write_to_json, REPOS_ORIGIN_DIR, REPOS_MPI_DIR
+from repository import Repo
 
 
 NEW_DATABASE = True
