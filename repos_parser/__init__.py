@@ -8,6 +8,7 @@ from datetime import date
 
 REPOS_ORIGIN_DIR = '/home/nadavsc/LIGHTBITS/data_gathering_script/git_repos'
 REPOS_MPI_DIR = '/home/nadavsc/LIGHTBITS/code2mpi/repositories_MPI'
+REPOS_MPI_SLICED_DIR = '/home/nadavsc/LIGHTBITS/code2mpi/repositories_MPI_SLICED'
 EXTENSIONS = ['.c', '.f', '.f77', '.f90', '.f95', '.f03', '.cc', '.cpp', '.cxx', '.h']
 START_IDX = len(os.path.join(os.getcwd(), REPOS_ORIGIN_DIR)) + 1
 FORTRAN_EXTENSIONS = ['.f', '.f77', '.f90', '.f95', '.f03']
@@ -23,43 +24,27 @@ def write_to_json(data, path):
         json.dump(data, f, indent=4)
 
 
-def copy_file(src, dst, MPI_functions):
-    src = src[START_IDX:]
-    dst = os.path.join(dst, src)
-    dstfolder = os.path.dirname(dst)
+def start_idx_calc(repo_dir):
+    return len(os.path.join(os.getcwd(), repo_dir)) + 1
 
+def make_dst_folder(dst):
+    dstfolder = os.path.dirname(dst)
     if not os.path.exists(dstfolder):
         os.makedirs(dstfolder)
 
-    shutil.copy(os.path.join(REPOS_ORIGIN_DIR, src), dst)
+def src_dst_prep(src, dst, src_repo):
+    src = src[start_idx_calc(src_repo):]
+    dst = os.path.join(dst, src)
+    return src, dst
+
+
+def copy_file(src, dst, src_repo, MPI_functions):
+    src, dst = src_dst_prep(src, dst, src_repo)
+    make_dst_folder(dst)
+    shutil.copy(os.path.join(src_repo, src), dst)
+
     with open(f'{dst}.json', "w") as f:
         json.dump(MPI_functions, f, indent=4)
-
-
-def is_print_included(line, ext):
-    if ext in FORTRAN_EXTENSIONS:
-        return 'print' in line
-    else:
-        return ('printf' in line) or ('cout' in line)
-
-
-def mpi_func_included(lines, ext='.c'):
-    funcs_count = {}
-    funcs = []
-    for line in lines:
-        line = str(line)
-        if not is_print_included(line, ext):
-            funcs += re.findall('MPI_\w*', line)  # \S* for all the function
-    for func in funcs:
-        funcs_count[func] = (funcs_count[func] if func in funcs_count else 0) + 1
-    return funcs_count
-
-
-def mpi_included(line, language='c'):
-    line = str(line).lower()
-    if language == 'c':
-        return '#include' in line and 'mpi.h' in line
-    return 'include' in line and 'mpif.h' in line
 
 
 def get_extension(filename):
