@@ -47,6 +47,8 @@ class Repo:
         print(f'{self.idx}) {script_types}')
 
     def init_final_slice(self):
+        if self.repo_name == 'hpc':
+            print('YADA')
         sliced = False
         for idx, (root, dirs, fnames) in enumerate(os.walk(self.root_dir)):
             self.scripts = [Script(fname, os.path.join(root, fname), False) for fname in fnames if get_extension(fname) in EXTENSIONS]
@@ -57,6 +59,3 @@ class Repo:
                     sliced = True
         if sliced:
             info(f'{self.idx}) {self.repo_name} has been SLICED')
-
-
-

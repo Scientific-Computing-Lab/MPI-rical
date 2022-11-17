@@ -49,10 +49,26 @@ class Script:
         self.lines = re.sub(r"\\t", "\t", self.lines)
         self.lines = re.sub(r"\\r", "\r", self.lines)  # \\r is new line in MAC
 
+    def comment_matches(self):
+        if self.ext in FORTRAN_EXTENSIONS:
+            return [match for match in re.finditer(r'C[\s].*', self.lines, flags=re.IGNORECASE)]
+        return [match for match in re.finditer(r'\/\*(.*?)\*\/', self.lines, flags=re.IGNORECASE)]  # r'\/\*[^!]*?\*\/'
+
+    def comment_ranges(self):
+        comment_matches = self.comment_matches()
+        return [range(match.span()[0], match.span()[1]) for match in comment_matches]
+
+    def in_comment_ranges(self, match):
+        print_ranges = self.print_ranges()
+        for print_range in print_ranges:
+            if match.span()[0] in print_range:
+                return True
+        return False
+
     def init_final_slice(self, dir):
         init_match = re.search(r'[n]\s*[a-z^n]*\s*MPI_Init[(]\S*', self.lines, flags=re.IGNORECASE)
         finalize_matches = [match for match in re.finditer(r'MPI_Finalize[^\\]*', self.lines, flags=re.IGNORECASE)]
-        if init_match and finalize_matches:
+        if init_match and finalize_matches and not self.in_comment_ranges(init_match):
             self.lines = self.lines[init_match.span()[0]+1:finalize_matches[-1].span()[1]]
             self.line_endings_correction()
             make_dst_folder(dir)
