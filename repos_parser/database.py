@@ -9,27 +9,33 @@ from repos_parser import REPOS_ORIGIN_DIR, REPOS_MPI_DIR, EXTENSIONS, FORTRAN_EX
 from repos_parser import write_to_json, get_extension
 
 
+def load_json_database(path):
+    with open(path, 'r') as f:
+        return json.load(f)
+
+
 class Database:
-    def __init__(self, database_path=None):
+    def __init__(self, repos_dir, database_path=None):
+        self.database = {}
+        self.repos_dir = repos_dir
         if database_path:
-            self.database = self.load_database(database_path)
+            self.database = load_json_database(database_path)
         else:
-            self.write_database_json()
+            self.create_database()
 
-    def write_database_json(self):
-        database_info = {}
-        for idx, repo_name in enumerate(os.listdir(REPOS_MPI_DIR)):
-            repo = Repo(repo_name=repo_name,
-                        repos_dir=REPOS_MPI_DIR,
-                        idx=idx,
-                        copy=False)
+    def load_repos(self):
+        for idx, repo_name in enumerate(os.listdir(self.repos_dir)):
+            yield Repo(repo_name=repo_name,
+                       repos_dir=self.repos_dir,
+                       idx=idx,
+                       copy=False)
+
+    def create_database(self):
+        for repo in self.load_repos():
             repo.scan_repo()
-            database_info[repo_name] = repo.repo_info[repo_name]
-        write_to_json(database_info, 'database.json')
-
-    def load_database(self, path):
-        with open(path, 'r') as f:
-            return json.load(f)
+            if repo.included:
+                self.database[repo.name] = repo.json_repo_info[repo.name]
+        write_to_json(self.database, 'database.json')
 
     def set_counter(self):
         set_counter = {'funcs': {}}
@@ -74,7 +80,3 @@ class Database:
                 if self.is_remove(fname):
                     os.remove(os.path.join(root, fname))
 
-database = Database('database.json')
-total_functions = database.total_functions()
-database.set_counter()
-print('YADA')

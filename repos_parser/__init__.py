@@ -27,10 +27,12 @@ def write_to_json(data, path):
 def start_idx_calc(repo_dir):
     return len(os.path.join(os.getcwd(), repo_dir)) + 1
 
+
 def make_dst_folder(dst):
     dstfolder = os.path.dirname(dst)
     if not os.path.exists(dstfolder):
         os.makedirs(dstfolder)
+
 
 def src_dst_prep(src, dst, src_repo):
     src = src[start_idx_calc(src_repo):]
@@ -38,13 +40,13 @@ def src_dst_prep(src, dst, src_repo):
     return src, dst
 
 
-def copy_file(src, dst, src_repo, MPI_functions):
+def copy_file(src, dst, src_repo, mpi_functions):
     src, dst = src_dst_prep(src, dst, src_repo)
     make_dst_folder(dst)
     shutil.copy(os.path.join(src_repo, src), dst)
 
     with open(f'{dst}.json', "w") as f:
-        json.dump(MPI_functions, f, indent=4)
+        json.dump(mpi_functions, f, indent=4)
 
 
 def get_extension(filename):

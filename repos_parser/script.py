@@ -59,14 +59,25 @@ class Script:
         return [range(match.span()[0], match.span()[1]) for match in comment_matches]
 
     def in_comment_ranges(self, match):
-        print_ranges = self.print_ranges()
-        for print_range in print_ranges:
+        comment_ranges = self.comment_ranges()
+        for print_range in comment_ranges:
             if match.span()[0] in print_range:
                 return True
         return False
 
-    def init_final_slice(self, dir):
-        init_match = re.search(r'[n]\s*[a-z^n]*\s*MPI_Init[(]\S*', self.lines, flags=re.IGNORECASE)
+    def del_comment_line(self):
+        pattern = r'[!][\s]*.*?[\\]*[\\][n]' if self.ext in FORTRAN_EXTENSIONS else r'[\/][\/].*?[\\]*[\\][n]'
+        self.lines = re.sub(pattern, '', self.lines, flags=re.IGNORECASE)
+
+    def del_comments(self):
+        self.del_comment_line()
+        if self.ext not in FORTRAN_EXTENSIONS:
+            self.lines = re.sub(r'\/\*(.*?)\*\/', '', self.lines, flags=re.IGNORECASE)
+
+    def init_final_slice(self, dir, comments=False):
+        if not comments:
+            self.del_comments()
+        init_match = re.search(r'[n]\s*[a-z^n]*\s*MPI_Init.*?[\\]*[\\][n]', self.lines, flags=re.IGNORECASE)
         finalize_matches = [match for match in re.finditer(r'MPI_Finalize[^\\]*', self.lines, flags=re.IGNORECASE)]
         if init_match and finalize_matches and not self.in_comment_ranges(init_match):
             self.lines = self.lines[init_match.span()[0]+1:finalize_matches[-1].span()[1]]
