@@ -5,8 +5,8 @@ import collections
 import matplotlib.pyplot as plt
 
 from repository import Repo
-from repos_parser import REPOS_ORIGIN_DIR, REPOS_MPI_DIR, EXTENSIONS, FORTRAN_EXTENSIONS
-from repos_parser import write_to_json, get_extension
+from repos_parser import REPOS_ORIGIN_DIR, REPOS_MPI_DIR, REPOS_MPI_SLICED_DIR, EXTENSIONS, FORTRAN_EXTENSIONS
+from repos_parser import write_to_json, name_split
 
 
 def load_json_database(path):
@@ -15,13 +15,13 @@ def load_json_database(path):
 
 
 class Database:
-    def __init__(self, repos_dir, database_path=None):
+    def __init__(self, repos_dir, new_db_name=None, database_path=None):
         self.database = {}
         self.repos_dir = repos_dir
         if database_path:
             self.database = load_json_database(database_path)
         else:
-            self.create_database()
+            self.create_database(new_db_name)
 
     def load_repos(self):
         for idx, repo_name in enumerate(os.listdir(self.repos_dir)):
@@ -30,19 +30,19 @@ class Database:
                        idx=idx,
                        copy=False)
 
-    def create_database(self):
+    def create_database(self, new_db_name):
         for repo in self.load_repos():
             repo.scan_repo()
             if repo.included:
                 self.database[repo.name] = repo.json_repo_info[repo.name]
-        write_to_json(self.database, 'database.json')
+        write_to_json(self.database, f'{new_db_name}.json')
 
-    def set_counter(self):
-        set_counter = {'funcs': {}}
+    def functions_chain_counter(self):
+        chain_funcs = {}
         for repo_name, info in self.database.items():
             for script_name, script_info in info['scripts'].items():
-                funcs = '-'.join(script_info['funcs'].keys())
-                set_counter['funcs'][funcs] = (set_counter['funcs'][funcs] if funcs in set_counter else 0) + 1
+                funcs = '->'.join(script_info['funcs'].keys()).lower()
+                chain_funcs[funcs] = (chain_funcs[funcs] if funcs in chain_funcs else 0) + 1
         print('YADA')
 
     def total_script_types(self):
@@ -70,7 +70,7 @@ class Database:
         plt.show()
 
     def is_remove(self, fname):
-        if get_extension(fname) in EXTENSIONS:
+        if name_split(fname)[1] in EXTENSIONS:
             return re.search('_slice', fname)
         return True
 
@@ -80,3 +80,9 @@ class Database:
                 if self.is_remove(fname):
                     os.remove(os.path.join(root, fname))
 
+
+database = Database(repos_dir=REPOS_MPI_SLICED_DIR,
+                    new_db_name=None,
+                    database_path='database_sliced.json')
+database.functions_chain_counter()
+print('YADA')

@@ -40,16 +40,12 @@ def src_dst_prep(src, dst, src_repo):
     return src, dst
 
 
-def copy_file(src, dst, src_repo, mpi_functions):
+def copy_file(src, dst, src_repo):
     src, dst = src_dst_prep(src, dst, src_repo)
     make_dst_folder(dst)
     shutil.copy(os.path.join(src_repo, src), dst)
 
-    with open(f'{dst}.json', "w") as f:
-        json.dump(mpi_functions, f, indent=4)
 
-
-def get_extension(filename):
-    return os.path.splitext(filename)[1].lower()
-
-
+def name_split(filename):
+    split = os.path.splitext(filename)
+    return split[0], split[1].lower()

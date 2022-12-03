@@ -2,16 +2,16 @@ import os
 import re
 
 from logger import set_logger, info
-from repos_parser import make_dst_folder, get_extension, FORTRAN_EXTENSIONS
+from repos_parser import make_dst_folder, name_split, FORTRAN_EXTENSIONS
 
 
 class Script:
-    def __init__(self, fname, path, load_by_line=True):
-        self.fname = fname
+    def __init__(self, path, load_by_line=True):
         self.path = path
-        self.name = self.fname.split('.')[0]
-        self.ext = get_extension(fname)
         self.load_by_line = load_by_line
+
+        self.fname = os.path.basename(path)
+        self.name, self.ext = name_split(self.fname)
         self.lines = self.load_script()
 
         self.funcs_counter = {}
@@ -22,6 +22,14 @@ class Script:
             if self.load_by_line:
                 return f.readlines()
             return str(f.read())
+
+    def get_headers(self):
+        headers = [f'{header}.h' for header in re.findall(f'[<"](.*?).h[">]', str(self.lines), flags=re.IGNORECASE)]
+        return [header.split('/')[-1] for header in headers]
+
+    def is_main(self):
+        if re.search(r'int main[(](.*?)[)]', self.lines, flags=re.IGNORECASE):
+            return True
 
     def is_mpi_included(self, line):
         line = str(line).lower()

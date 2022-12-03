@@ -1,7 +1,7 @@
 import os
 import re
 
-from repos_parser import get_extension, copy_file, script_types, start_idx_calc, src_dst_prep
+from repos_parser import name_split, copy_file, script_types, start_idx_calc, src_dst_prep
 from repos_parser import EXTENSIONS, FORTRAN_EXTENSIONS, REPOS_MPI_DIR, REPOS_MPI_SLICED_DIR, REPOS_ORIGIN_DIR
 from script import Script
 
@@ -36,7 +36,7 @@ class Repo:
     def load_scripts(self):
         for idx, (root, dirs, fnames) in enumerate(os.walk(self.root_dir)):
             for fname in fnames:
-                if get_extension(fname) in EXTENSIONS:
+                if name_split(fname)[1] in EXTENSIONS:
                     yield Script(fname, os.path.join(root, fname))
 
     def scan_repo(self):
@@ -46,15 +46,14 @@ class Repo:
                 self.update_counters(script.ext)
                 self.update_json(script.fname, script.funcs_counter)
                 if self.copy:
-                    copy_file(src=script.path, dst=REPOS_MPI_DIR, src_repo=REPOS_ORIGIN_DIR,
-                              MPI_functions=script.funcs_counter)
+                    copy_file(src=script.path, dst=REPOS_MPI_DIR, src_repo=REPOS_ORIGIN_DIR)
                 break
         print(f'{self.idx}) {script_types}')
 
     def init_final_slice(self):
         sliced = False
         for idx, (root, dirs, fnames) in enumerate(os.walk(self.root_dir)):
-            self.scripts = [Script(fname, os.path.join(root, fname), False) for fname in fnames if get_extension(fname) in EXTENSIONS]
+            self.scripts = [Script(os.path.join(root, fname), False) for fname in fnames if name_split(fname)[1] in EXTENSIONS]
             for script in self.scripts:
                 _, dst = src_dst_prep(script.path, REPOS_MPI_SLICED_DIR, REPOS_MPI_DIR)
                 script_sliced = script.init_final_slice(dst)
