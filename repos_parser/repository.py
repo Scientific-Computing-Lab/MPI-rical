@@ -1,9 +1,11 @@
 import os
 import re
 
-from repos_parser import name_split, copy_file, script_types, start_idx_calc, src_dst_prep
+from repos_parser import name_split, copy_file, script_types, start_idx_calc, src_dst_prep, load_json
 from repos_parser import EXTENSIONS, FORTRAN_EXTENSIONS, REPOS_MPI_DIR, REPOS_MPI_SLICED_DIR, REPOS_ORIGIN_DIR
 from script import Script
+from program import Program
+from c_parse import repo_parser, main_division
 
 from logger import set_logger, info
 
@@ -61,3 +63,12 @@ class Repo:
                     sliced = True
         if sliced:
             info(f'{self.idx}) {self.name} has been SLICED')
+
+    def program_division(self):
+        self.programs = []
+        mains, repo_headers = repo_parser(self.repos_dir, self.name)
+        for main_path, main_name in mains.items():
+            program = {'main': {'path': main_path, 'name': main_name}, 'headers': {}}
+            headers_path = main_division(main_name, Script(main_path), repo_headers)
+            program['headers'] = headers_path
+            self.programs.append(Program(program=program, repo=self))

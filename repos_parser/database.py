@@ -9,7 +9,7 @@ from repos_parser import REPOS_ORIGIN_DIR, REPOS_MPI_DIR, REPOS_MPI_SLICED_DIR, 
 from repos_parser import write_to_json, name_split
 
 
-def load_json_database(path):
+def load_json(path):
     with open(path, 'r') as f:
         return json.load(f)
 
@@ -19,7 +19,7 @@ class Database:
         self.database = {}
         self.repos_dir = repos_dir
         if database_path:
-            self.database = load_json_database(database_path)
+            self.database = load_json(database_path)
         else:
             self.create_database(new_db_name)
 

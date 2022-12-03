@@ -17,11 +17,14 @@ def slice_all_repos():
         repo.init_final_slice()
 
 
-def slice_repo(repo_name):
-    repo = Repo(repo_name=repo_name,
-                repos_dir=REPOS_MPI_DIR,
-                copy=False)
-    repo.init_final_slice()
+def program_division():
+    for idx, repo_name in enumerate(os.listdir(REPOS_ORIGIN_DIR)):
+        repo = Repo(repo_name=repo_name,
+                    repos_dir=REPOS_ORIGIN_DIR,
+                    idx=idx,
+                    copy=False)
+        repo.program_division()
 
 
-slice_all_repos()
+# slice_all_repos()
+program_division()
