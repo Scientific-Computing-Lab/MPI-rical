@@ -30,26 +30,26 @@ def write_to_json(data, path):
         json.dump(data, f, indent=4)
 
 
-def start_idx_calc(repo_dir):
-    return len(os.path.join(os.getcwd(), repo_dir)) + 1
-
-
 def make_dst_folder(dst):
     dstfolder = os.path.dirname(dst)
     if not os.path.exists(dstfolder):
         os.makedirs(dstfolder)
 
 
-def src_dst_prep(src, dst, src_repo):
-    src = src[start_idx_calc(src_repo):]
+def start_idx_calc(src_origin):
+    return len(os.path.join(os.getcwd(), src_origin)) + 1
+
+
+def src_dst_prep(src, dst, src_origin):
+    src = src[start_idx_calc(src_origin):]
     dst = os.path.join(dst, src)
     return src, dst
 
 
-def copy_file(src, dst, src_repo):
-    src, dst = src_dst_prep(src, dst, src_repo)
+def copy_file(src, dst, src_origin):
+    src, dst = src_dst_prep(src, dst, src_origin)
     make_dst_folder(dst)
-    shutil.copy(os.path.join(src_repo, src), dst)
+    shutil.copy(os.path.join(src_origin, src), dst)
 
 
 def name_split(filename):

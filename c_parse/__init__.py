@@ -1,19 +1,41 @@
 import os
-
+import re
+import gc
 from repos_parser import REPOS_ORIGIN_DIR, name_split
 from script import Script
 
 from pycparser import parse_file
 
 
-def main_division(main_fname, script, repo_headers, headers=[]):
-    include_headers = script.get_headers()
+def load_script(path):
+    with open(path, 'rb') as f:
+        return f.readlines()
+
+
+def script_details(path):
+    lines = load_script(path)
+    headers = [f'{header}.h' for header in re.findall(f'[<"](.*?).h[">]', str(lines), flags=re.IGNORECASE)]
+    return os.path.basename(path), [header.split('/')[-1] for header in headers]
+
+
+def main_division(main_fname, script_path, repo_headers, headers=[]):
+    script_name, include_headers = script_details(script_path)
     for header in include_headers:
         if header in repo_headers.keys():
-            headers += main_division(main_fname, Script(path=repo_headers[header]), repo_headers, headers)
-    if script.fname != main_fname:
-        return [script.path]
+            headers += main_division(main_fname, repo_headers[header], repo_headers, headers)
+    if script_name != main_fname:
+        return [script_path]
     return headers
+
+
+# def main_division(main_fname, script, repo_headers, headers=[]):
+#     include_headers = script.get_headers()
+#     for header in include_headers:
+#         if header in repo_headers.keys():
+#             headers += main_division(main_fname, Script(path=repo_headers[header]), repo_headers, headers)
+#     if script.fname != main_fname:
+#         return [script.path]
+#     return headers
 
 
 def repo_parser(repos_dir, repo_name, find_headers=True, find_main=True):

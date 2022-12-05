@@ -4,14 +4,11 @@ import json
 import collections
 import matplotlib.pyplot as plt
 
-from repository import Repo
+from user import User
 from repos_parser import REPOS_ORIGIN_DIR, REPOS_MPI_DIR, REPOS_MPI_SLICED_DIR, EXTENSIONS, FORTRAN_EXTENSIONS
-from repos_parser import write_to_json, name_split
-
-
-def load_json(path):
-    with open(path, 'r') as f:
-        return json.load(f)
+from repos_parser import write_to_json, load_json, name_split
+from c_parse import main_division, repo_parser
+from script import Script
 
 
 class Database:
@@ -23,23 +20,31 @@ class Database:
         else:
             self.create_database(new_db_name)
 
-    def load_repos(self):
-        for idx, repo_name in enumerate(os.listdir(self.repos_dir)):
-            yield Repo(repo_name=repo_name,
-                       repos_dir=self.repos_dir,
+    def load_users(self):
+        for idx, user_name in enumerate(os.listdir(self.users_dir)):
+            yield User(user_name=user_name,
+                       users_dir=self.users_dir,
                        idx=idx,
                        copy=False)
 
     def create_database(self, new_db_name):
-        for repo in self.load_repos():
-            repo.scan_repo()
-            if repo.included:
-                self.database[repo.name] = repo.json_repo_info[repo.name]
+        for user in self.load_users():
+            user.scan_user()
+            if user.included:
+                self.database[user.name] = user.json_user_info[user.name]
         write_to_json(self.database, f'{new_db_name}.json')
+
+    def program_division(self):
+        self.programs = []
+        mains, repo_headers = repo_parser(self.repos_dir, self.name)
+        for main_path, main_name in mains.items():
+            program = {'main': {'path': main_path, 'name': main_name}, 'headers': {}}
+            headers_path = main_division(main_name, Script(main_path), repo_headers)
+            program['headers'] = headers_path
 
     def functions_chain_counter(self):
         chain_funcs = {}
-        for repo_name, info in self.database.items():
+        for user_name, info in self.database.items():
             for script_name, script_info in info['scripts'].items():
                 funcs = '->'.join(script_info['funcs'].keys()).lower()
                 chain_funcs[funcs] = (chain_funcs[funcs] if funcs in chain_funcs else 0) + 1
