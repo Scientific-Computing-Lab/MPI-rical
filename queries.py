@@ -37,6 +37,6 @@ def init_finalize_count(db):
                         init_finalize_lines = lines[init_match.span()[0] + 1:finalize_matches[-1].span()[1]]
                         num_lines_init_finalize = len(count_lines(init_finalize_lines)) + 1
                         ratio = num_lines_init_finalize/num_lines
-                        info(f'{count} Init-Finalize programs\nAll lines: {num_lines}, Init-Finalize: {num_lines_init_finalize}, Ratio: {ratio}\n')
+                        info(f'{count} Init-Finalize programs\nAll lines: {num_lines}, Init-Finalize: {num_lines_init_finalize}, Ratio: {ratio:.2f}\n')
     return count
 

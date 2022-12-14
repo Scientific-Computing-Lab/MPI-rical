@@ -1,7 +1,7 @@
 import os
 
 from queries import init_finalize_count
-from queries_multiprocess import openmp_mpi_count_multiprocess
+from queries_multiprocess import openmp_mpi_count_multiprocess, init_finalize_count_multiprocess
 from repos_parser import PROGRAMS_MPI_DIR, REPOS_MPI_DIR, REPOS_ORIGIN_DIR
 from repos_parser import load_json
 from c_parse import repo_parser, Extractor
@@ -30,5 +30,6 @@ def program_division(db):
 
 
 programs_db = load_json(os.path.join('database_programs.json'))
-init_finalize_count(programs_db)
+init_finalize_count_multiprocess(programs_db)
+# init_finalize_count(programs_db)
 # openmp_mpi_count_multiprocess(programs_db, n_cores=32)
