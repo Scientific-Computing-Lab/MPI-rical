@@ -13,6 +13,7 @@ PROGRAMS_MPI_DIR = '/home/nadavsc/LIGHTBITS/code2mpi/programs'
 EXTENSIONS = ['.c', '.f', '.f77', '.f90', '.f95', '.f03', '.cc', '.cpp', '.cxx', '.h']
 START_IDX = len(os.path.join(os.getcwd(), REPOS_ORIGIN_DIR)) + 1
 FORTRAN_EXTENSIONS = ['.f', '.f77', '.f90', '.f95', '.f03']
+
 script_types = {}
 
 
@@ -28,6 +29,11 @@ def write_to_json(data, path):
 
     with open(path, "w") as f:
         json.dump(data, f, indent=4)
+
+
+def get_repos(user_dir, id=0):
+    return {id + offset: {'name': repo_name, 'path': os.path.join(user_dir, repo_name), 'programs': {}} for offset, repo_name in
+            enumerate(os.listdir(user_dir))}
 
 
 def make_dst_folder(dst):
@@ -50,8 +56,3 @@ def copy_file(src, dst, src_origin):
     src, dst = src_dst_prep(src, dst, src_origin)
     make_dst_folder(dst)
     shutil.copy(os.path.join(src_origin, src), dst)
-
-
-def name_split(filename):
-    split = os.path.splitext(filename)
-    return split[0], split[1].lower()

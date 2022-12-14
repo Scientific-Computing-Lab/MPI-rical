@@ -1,41 +1,9 @@
 import os
 import re
-import gc
-from repos_parser import REPOS_ORIGIN_DIR, name_split
-from script import Script
+
+from files_parser import name_split, is_main, load_file, file_headers
 
 from pycparser import parse_file
-
-
-def load_script(path):
-    with open(path, 'rb') as f:
-        return f.readlines()
-
-
-def script_details(path):
-    lines = load_script(path)
-    headers = [f'{header}.h' for header in re.findall(f'[<"](.*?).h[">]', str(lines), flags=re.IGNORECASE)]
-    return os.path.basename(path), [header.split('/')[-1] for header in headers]
-
-
-def main_division(main_fname, script_path, repo_headers, headers=[]):
-    script_name, include_headers = script_details(script_path)
-    for header in include_headers:
-        if header in repo_headers.keys():
-            headers += main_division(main_fname, repo_headers[header], repo_headers, headers)
-    if script_name != main_fname:
-        return [script_path]
-    return headers
-
-
-# def main_division(main_fname, script, repo_headers, headers=[]):
-#     include_headers = script.get_headers()
-#     for header in include_headers:
-#         if header in repo_headers.keys():
-#             headers += main_division(main_fname, Script(path=repo_headers[header]), repo_headers, headers)
-#     if script.fname != main_fname:
-#         return [script.path]
-#     return headers
 
 
 def repo_parser(repos_dir, repo_name, find_headers=True, find_main=True):
@@ -50,18 +18,52 @@ def repo_parser(repos_dir, repo_name, find_headers=True, find_main=True):
             if find_main:
                 if ext == '.c':
                     path = os.path.join(root, fname)
-                    script = Script(path, load_by_line=False)
-                    if script.is_main():
+                    lines = load_file(path, load_by_line=False)
+                    if is_main(lines):
                         mains[path] = fname
     return mains, headers
 
+## TODO: add .c extractors
+class Extractor:
+    def __init__(self, main_fname, repo_headers):
+        self.headers = []
+        self.main_fname = main_fname
+        self.repo_headers = repo_headers
 
-# mains, repo_headers = repo_parser(repos_dir=REPOS_ORIGIN_DIR, repo_name='ADCDS')
-# # headers = main_programs('png_manager_test.c',
-# #                         Script(path=r'/home/nadavsc/LIGHTBITS/data_gathering_script/git_repos/ADCDS/MPI_CountingStars/Tests/png_manager_test.c'),
-# #                         repo_headers)
-# headers = main_division('main.c',
-#                         Script(path=r'/home/nadavsc/LIGHTBITS/data_gathering_script/git_repos/ADCDS/MPI_CountingStars/main.c'),
-#                         repo_headers)
-# print(headers)
-# print('YADA')
+    def extraction(self, file_path):
+        if file_path in self.headers:
+            return
+
+        script_name, include_headers = file_headers(file_path)
+        if script_name != self.main_fname:
+            self.headers.append(file_path)
+
+        for header in include_headers:
+            if header in self.repo_headers.keys():
+                self.extraction(self.repo_headers[header])
+
+
+# def main_division(main_fname, script_path, repo_headers, headers=[]):
+#     script_name, include_headers = file_details(script_path)
+#     for header in include_headers:
+#         if header in repo_headers.keys():
+#             headers += main_division(main_fname, repo_headers[header], repo_headers, headers)
+#     if script_name != main_fname:
+#         return [script_path]
+#     return headers
+
+# def f(self, item):
+#     repo_name, repo_dir = item
+#     self.programs_user_dir = os.path.join(PROGRAMS_MPI_DIR, self.name)
+#     mains, repo_headers = repo_parser(self.users_dir, repo_dir)
+#     if mains and not os.path.exists(self.programs_user_dir):
+#         os.makedirs(self.programs_user_dir)
+#     for main_path, main_name in mains.items():
+#         program = {'main': {'path': main_path, 'name': main_name}, 'headers': {}}
+#         headers_path = main_division(main_name, main_path, repo_headers, headers=[])
+#         program['headers'] = headers_path
+#         Program(program=program, user=self, repo_name=repo_name, repo_dir=repo_dir)
+#
+# def program_division(self):
+#     with Pool(mp.cpu_count()) as p:
+#         p.map(self.f, self.repos.items())

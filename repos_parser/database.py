@@ -4,90 +4,84 @@ import json
 import collections
 import matplotlib.pyplot as plt
 
-from user import User
-from repos_parser import REPOS_ORIGIN_DIR, REPOS_MPI_DIR, REPOS_MPI_SLICED_DIR, EXTENSIONS, FORTRAN_EXTENSIONS
-from repos_parser import write_to_json, load_json, name_split
-from c_parse import main_division, repo_parser
-from script import Script
+from repos_parser import REPOS_ORIGIN_DIR, PROGRAMS_MPI_DIR, REPOS_MPI_DIR, REPOS_MPI_SLICED_DIR, EXTENSIONS, FORTRAN_EXTENSIONS
+from repos_parser import write_to_json, load_json, get_repos
+from files_parser import name_split, files_walk
+from c_parse import repo_parser
 
 
-class Database:
-    def __init__(self, repos_dir, new_db_name=None, database_path=None):
-        self.database = {}
-        self.repos_dir = repos_dir
-        if database_path:
-            self.database = load_json(database_path)
-        else:
-            self.create_database(new_db_name)
+from logger import set_logger, info
 
-    def load_users(self):
-        for idx, user_name in enumerate(os.listdir(self.users_dir)):
-            yield User(user_name=user_name,
-                       users_dir=self.users_dir,
-                       idx=idx,
-                       copy=False)
-
-    def create_database(self, new_db_name):
-        for user in self.load_users():
-            user.scan_user()
-            if user.included:
-                self.database[user.name] = user.json_user_info[user.name]
-        write_to_json(self.database, f'{new_db_name}.json')
-
-    def program_division(self):
-        self.programs = []
-        mains, repo_headers = repo_parser(self.repos_dir, self.name)
-        for main_path, main_name in mains.items():
-            program = {'main': {'path': main_path, 'name': main_name}, 'headers': {}}
-            headers_path = main_division(main_name, Script(main_path), repo_headers)
-            program['headers'] = headers_path
-
-    def functions_chain_counter(self):
-        chain_funcs = {}
-        for user_name, info in self.database.items():
-            for script_name, script_info in info['scripts'].items():
-                funcs = '->'.join(script_info['funcs'].keys()).lower()
-                chain_funcs[funcs] = (chain_funcs[funcs] if funcs in chain_funcs else 0) + 1
-        print('YADA')
-
-    def total_script_types(self):
-        counter = collections.Counter()
-        for value in self.database.values():
-            counter.update(value['types'])
-        return dict(counter)
-
-    def total_functions(self):
-        counter = collections.Counter()
-        for value in self.database.values():
-            for script in value['scripts'].values():
-                counter.update(script['funcs'])
-        return dict(counter)
-
-    def sort_total_functions(self):
-        return zip(*dict(sorted(self.total_functions.items(), key=lambda item: item[1], reverse=True)).items())
-
-    def draw_functions_hist(self):
-        keys, values = self.sort_total_functions()
-        fig, ax = plt.subplots(1, 1)
-        ax.set_title('Functions Distribution')
-        ax.bar(keys[:30], values[:30], color='g')
-        plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
-        plt.show()
-
-    def is_remove(self, fname):
-        if name_split(fname)[1] in EXTENSIONS:
-            return re.search('_slice', fname)
-        return True
-
-    def clear(self):
-        for (root, dirs, fnames) in os.walk(REPOS_MPI_DIR):
-            for fname in fnames:
-                if self.is_remove(fname):
-                    os.remove(os.path.join(root, fname))
+set_logger()
 
 
-database = Database(repos_dir=REPOS_MPI_SLICED_DIR,
-                    new_db_name=None,
-                    database_path='database_sliced.json')
-database.functions_chain_counter()
-print('YADA')
+def db_origin_generate():
+    database = {}
+    repos_count = 0
+    for id, user_name in enumerate(os.listdir(REPOS_ORIGIN_DIR)):
+        database[id] = {'name': user_name, 'repos': {}}
+        origin_user_dir = os.path.join(REPOS_ORIGIN_DIR, user_name)
+        repos = {repo_id: {'name': repo_name, 'path': os.path.join(origin_user_dir, repo_name), 'types': {}}
+                 for repo_id, repo_name in enumerate(os.listdir(origin_user_dir))}
+        database[id]['repos'].update(repos)
+        for repo_id, repo_details in repos.items():
+            repo_types = database[id]['repos'][repo_id]['types']
+            for fpath in files_walk(repo_details['path']):
+                fname, ext = name_split(os.path.basename(fpath))
+                if ext in EXTENSIONS:
+                    repo_types[ext] = repo_types[ext] = (repo_types[ext] if ext in repo_types else 0) + 1
+            repos_count += 1
+            info(f'{repos_count}) Repo {repo_details["name"]} programs have been added to database')
+    write_to_json(database, 'database_origin.json')
+
+
+def db_programs_generate():
+    database = {}
+    for id, user_name in enumerate(os.listdir(PROGRAMS_MPI_DIR)):
+        user_dir, origin_user_dir = os.path.join(PROGRAMS_MPI_DIR, user_name), os.path.join(REPOS_ORIGIN_DIR, user_name)
+        database.update(get_repos(origin_user_dir, id))
+        for repo_id, repo_details in get_repos(user_dir, id).items():
+            for program_id, program_path in enumerate(os.listdir(repo_details['path'])):
+                database[repo_id]['programs'][program_id] = os.path.join(repo_details['path'], program_path)
+            info(f'{repo_id}) Repo {repo_details["name"]} programs have been added to database')
+    write_to_json(database, 'database_programs.json')
+
+
+def functions_chain_counter(db):
+    chain_funcs = {}
+    for user_name, info in db.items():
+        for script_name, script_info in info['scripts'].items():
+            funcs = '->'.join(script_info['funcs'].keys()).lower()
+            chain_funcs[funcs] = (chain_funcs[funcs] if funcs in chain_funcs else 0) + 1
+    return chain_funcs
+
+
+def total_script_types(db):
+    counter = collections.Counter()
+    for value in db.values():
+        counter.update(value['types'])
+    return dict(counter)
+
+
+def sort_total_functions(total_functions):
+    return zip(*dict(sorted(total_functions.items(), key=lambda item: item[1], reverse=True)).items())
+
+
+def total_functions(db):
+    counter = collections.Counter()
+    for value in db.values():
+        for script in value['scripts'].values():
+            counter.update(script['funcs'])
+    return dict(counter)
+
+
+def draw_functions_hist(db):
+    keys, values = sort_total_functions(total_functions(db))
+    fig, ax = plt.subplots(1, 1)
+    ax.set_title('Functions Distribution')
+    ax.bar(keys[:30], values[:30], color='g')
+    plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
+    plt.show()
+
+
+db_origin_generate()
