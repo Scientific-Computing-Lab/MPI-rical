@@ -30,6 +30,6 @@ def program_division(db):
 
 
 programs_db = load_json(os.path.join('database_programs.json'))
-init_finalize_count_multiprocess(programs_db)
+init_finalize_count_multiprocess(programs_db, n_cores=62)
 # init_finalize_count(programs_db)
 # openmp_mpi_count_multiprocess(programs_db, n_cores=32)
