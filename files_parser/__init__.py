@@ -20,25 +20,9 @@ def load_file(path, load_by_line=True):
         return str(f.read()), name, ext
 
 
-def file_headers(path):
-    lines = load_file(path, load_by_line=False)
-    headers = [f'{header}.h' for header in re.findall(f'[<"](.*?).h[">]', str(lines), flags=re.IGNORECASE)]
-    return os.path.basename(path), [header.split('/')[-1] for header in headers]
-
-
 def name_split(filename):
     split = os.path.splitext(filename)
     return split[0], split[1].lower()
-
-
-def get_headers(lines):
-    headers = [f'{header}.h' for header in re.findall(f'[<"](.*?).h[">]', str(lines), flags=re.IGNORECASE)]
-    return [header.split('/')[-1] for header in headers]
-
-
-def is_main(lines):
-    if re.search(r'int main[(](.*?)[)]', lines, flags=re.IGNORECASE):
-        return True
 
 
 def count_lines(lines):

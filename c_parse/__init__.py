@@ -1,27 +1,21 @@
 import os
 import re
 
-from files_parser import name_split, is_main, load_file, file_headers
+from files_parser import load_file, name_split
 
 from pycparser import parse_file
 
 
-def repo_parser(repos_dir, repo_name, find_headers=True, find_main=True):
-    headers = {}
-    mains = {}
-    for idx, (root, dirs, files) in enumerate(os.walk(os.path.join(repos_dir, repo_name))):
-        for fname in files:
-            _, ext = name_split(fname)
-            if find_headers:
-                if ext == '.h':
-                    headers[fname] = os.path.join(root, fname)
-            if find_main:
-                if ext == '.c':
-                    path = os.path.join(root, fname)
-                    lines = load_file(path, load_by_line=False)
-                    if is_main(lines):
-                        mains[path] = fname
-    return mains, headers
+def is_main(lines):
+    if re.search(r'int main[(](.*?)[)]', lines, flags=re.IGNORECASE):
+        return True
+
+
+def file_headers(path):
+    lines = load_file(path, load_by_line=False)
+    headers = [f'{header}.h' for header in re.findall(f'[<"](.*?).h[">]', str(lines), flags=re.IGNORECASE)]
+    return os.path.basename(path), [header.split('/')[-1] for header in headers]
+
 
 ## TODO: add .c extractors
 class Extractor:
@@ -43,27 +37,27 @@ class Extractor:
                 self.extraction(self.repo_headers[header])
 
 
-# def main_division(main_fname, script_path, repo_headers, headers=[]):
-#     script_name, include_headers = file_details(script_path)
-#     for header in include_headers:
-#         if header in repo_headers.keys():
-#             headers += main_division(main_fname, repo_headers[header], repo_headers, headers)
-#     if script_name != main_fname:
-#         return [script_path]
-#     return headers
+def repo_parser(repos_dir, repo_name, find_headers=True, find_main=True):
+    headers = {}
+    mains = {}
+    for idx, (root, dirs, files) in enumerate(os.walk(os.path.join(repos_dir, repo_name))):
+        for fname in files:
+            _, ext = name_split(fname)
+            if find_headers:
+                if ext == '.h':
+                    headers[fname] = os.path.join(root, fname)
+            if find_main:
+                if ext == '.c':
+                    path = os.path.join(root, fname)
+                    lines, _, _ = load_file(path, load_by_line=False)
+                    if is_main(lines):
+                        mains[path] = fname
+    return mains, headers
 
-# def f(self, item):
-#     repo_name, repo_dir = item
-#     self.programs_user_dir = os.path.join(PROGRAMS_MPI_DIR, self.name)
-#     mains, repo_headers = repo_parser(self.users_dir, repo_dir)
-#     if mains and not os.path.exists(self.programs_user_dir):
-#         os.makedirs(self.programs_user_dir)
-#     for main_path, main_name in mains.items():
-#         program = {'main': {'path': main_path, 'name': main_name}, 'headers': {}}
-#         headers_path = main_division(main_name, main_path, repo_headers, headers=[])
-#         program['headers'] = headers_path
-#         Program(program=program, user=self, repo_name=repo_name, repo_dir=repo_dir)
-#
-# def program_division(self):
-#     with Pool(mp.cpu_count()) as p:
-#         p.map(self.f, self.repos.items())
+
+def functions_implementations(lines):
+    return re.findall(r'[a-z]*\s[a-z*]*[(](.*?)[)]\s{', lines, flags=re.IGNORECASE)
+
+
+def functions_in_header(lines):
+    return [lines[slice(*match.span())] for match in re.finditer(r'[\\][n][a-z]*\s[a-z0-9_]*[(](.*?)[)];', lines, flags=re.IGNORECASE)]

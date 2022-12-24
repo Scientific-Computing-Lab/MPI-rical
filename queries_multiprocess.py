@@ -53,7 +53,7 @@ def init_finalize_count_task(repo, queue):
                 if init_match and finalize_matches and not comment_in_ranges(init_match, lines, ext):
                     counter.increment(1)
                     counter_value = counter.value
-                    if counter_value % 1000 == 0:
+                    if counter_value % 500 == 0:
                         print(f'-----------------------{counter_value} Programs-----------------------')
                     num_lines = len(count_lines(lines))
                     init_finalize_lines = lines[init_match.span()[0] + 1:finalize_matches[-1].span()[1]]
@@ -65,7 +65,7 @@ def init_finalize_count_task(repo, queue):
 
 
 def listener(queue):
-    with open('output.txt', 'a') as f:
+    with open('init-finalize-stats.txt', 'a') as f:
         while True:
             message = queue.get()
             if message == '#done#':
@@ -80,8 +80,6 @@ def init_finalize_count_multiprocess(db, n_cores=int(mp.cpu_count()/2)):
     counter = Counter()
     repos = list(db.values())
     print(f'Number of cores: {n_cores}')
-    # with Pool(n_cores) as p:
-    #     p.map(init_finalize_count_task, repos)
 
     manager = mp.Manager()
     queue = manager.Queue()
@@ -97,7 +95,7 @@ def init_finalize_count_multiprocess(db, n_cores=int(mp.cpu_count()/2)):
     for job in jobs:
         job.get()
 
-    queue.put('#done#')  # all workers are done, we close the output file
+    queue.put('#done#')
     pool.close()
     pool.join()
 
