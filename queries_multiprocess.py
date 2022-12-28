@@ -1,9 +1,13 @@
+import pdb
 import multiprocessing as mp
 
 from multiprocessing import Pool
+from datetime import datetime
 
-from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include
-from file_slice import find_init_final, comment_in_ranges
+from repos_parser import write_to_json
+from file_slice import find_init_final
+from c_parse import functions_in_header, functions_in_implementation
+from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, del_comments, comment_in_ranges
 
 
 class Counter(object):
@@ -64,7 +68,7 @@ def init_finalize_count_task(repo, queue):
                     queue.put(message)
 
 
-def listener(queue):
+def init_finalize_count_listener(queue):
     with open('init-finalize-stats.txt', 'a') as f:
         while True:
             message = queue.get()
@@ -84,12 +88,71 @@ def init_finalize_count_multiprocess(db, n_cores=int(mp.cpu_count()/2)):
     manager = mp.Manager()
     queue = manager.Queue()
     file_pool = mp.Pool(1)
-    file_pool.apply_async(listener, (queue,))
+    file_pool.apply_async(init_finalize_count_listener, (queue,))
 
     pool = mp.Pool(n_cores)
     jobs = []
     for repo in repos:
         job = pool.apply_async(init_finalize_count_task, (repo, queue))
+        jobs.append(job)
+
+    for job in jobs:
+        job.get()
+
+    queue.put('#done#')
+    pool.close()
+    pool.join()
+
+
+def functions_finder_task(repo, queue):
+    dict = {'path': repo['path'], 'headers': {}}
+    for fpath in files_walk(repo['path']):
+        lines, name, ext = load_file(fpath, load_by_line=False)
+        lines = del_comments(lines, ext)
+        if ext == '.h' and name not in dict['headers'].keys():
+            header_functions = [f_header for f_header in functions_in_header(lines)]
+            if header_functions:
+                name = name + '.h'
+                dict['headers'][name] = {}
+            for idx in range(len(header_functions)):
+                dict['headers'][name][idx] = header_functions[idx]
+    counter.increment(1)
+    cur_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    print(f'{cur_time}: {counter.value} repos have been analyzed')
+    queue.put({repo['name']: dict})
+
+
+def functions_finder_listener(queue):
+    database = {}
+    while True:
+        message = queue.get()
+        if type(message) != str:
+            database = {**database, **message}
+        else:
+            if message == '#done#':
+                break
+    print(f'Saving functions database to a json file...')
+    write_to_json(database, 'implementation_funcs.json')
+
+
+def functions_finder_multiprocess(origin_db, n_cores=mp.cpu_count()-1):
+    global counter
+    counter = Counter()
+    repos = []
+    for user_id in origin_db.keys():
+        for repo in origin_db[user_id]['repos'].values():
+            repos.append(repo)
+    repos = repos[:50]
+    print(f'Number of cores: {n_cores}')
+    manager = mp.Manager()
+    queue = manager.Queue()
+    file_pool = mp.Pool(1)
+    file_pool.apply_async(functions_finder_listener, (queue,))
+
+    pool = mp.Pool(n_cores)
+    jobs = []
+    for repo in repos:
+        job = pool.apply_async(functions_finder_task, (repo, queue))
         jobs.append(job)
 
     for job in jobs:

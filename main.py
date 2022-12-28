@@ -1,13 +1,24 @@
 import os
+import sys
+from os.path import dirname, abspath
+
+# project_path = dirname(abspath(__file__))
+project_path = r'/home/nadavsc/LIGHTBITS/code2mpi'
+sys.path.append(project_path)
+sys.path.append(os.path.join(project_path, 'repos_parser'))
+sys.path.append(os.path.join(project_path, 'files_parser'))
+sys.path.append(os.path.join(project_path, 'c_parse'))
+
 
 from queries import functions_finder
-from queries_multiprocess import openmp_mpi_count_multiprocess, init_finalize_count_multiprocess
+from queries_multiprocess import openmp_mpi_count_multiprocess, init_finalize_count_multiprocess, functions_finder_multiprocess
 from repos_parser import PROGRAMS_MPI_DIR, REPOS_MPI_DIR, REPOS_ORIGIN_DIR
 from repos_parser import load_json
 from c_parse import repo_parser, Extractor
 from program import init_folder, copy_files
 
 from logger import set_logger, info
+
 
 set_logger()
 
@@ -31,5 +42,6 @@ def program_division(db):
 
 # programs_db = load_json(os.path.join('database_programs.json'))
 origin_db = load_json(os.path.join('database_origin.json'))
-functions_finder(origin_db)
-init_finalize_count_multiprocess(programs_db, n_cores=62)
+# functions_finder(origin_db)
+functions_finder_multiprocess(origin_db)
+# init_finalize_count_multiprocess(programs_db, n_cores=62)

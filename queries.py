@@ -28,10 +28,10 @@ def openmp_mpi_count(db):
     return count
 
 
-def init_finalize_count(db):
+def init_finalize_count(programs_db):
     count = 0
-    for id, repo in db.items():
-        for program_id, program_path in repo['programs'].items():
+    for repo in programs_db.values():
+        for program_path in repo['programs'].values():
             for fpath in files_walk(program_path):
                 lines, name, ext = load_file(fpath, load_by_line=False)
                 if ext == '.c':
@@ -49,8 +49,10 @@ def init_finalize_count(db):
 def functions_finder(origin_db):
     database = {}
     repo_idx = 0
-    for user_id, user in origin_db.keys():
+    for user_id in origin_db.keys():
         for repo in origin_db[user_id]['repos'].values():
+            if repo['name'] == 'lemon':
+                print('YADA')
             database[repo_idx] = {'name': repo['name'], 'path': repo['path'], 'headers': {}}
             for fpath in files_walk(repo['path']):
                 lines, name, ext = load_file(fpath, load_by_line=False)

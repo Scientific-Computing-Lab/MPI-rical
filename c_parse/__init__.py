@@ -60,5 +60,11 @@ def functions_implementations(lines):
 
 
 def functions_in_header(lines):
-    return [line_endings_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z]*\s[a-z0-9_]*[(](.*?)[)];', lines, flags=re.IGNORECASE)]
+    functions = [line_endings_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9*]*\s[a-z0-9_*]*[(](.*?)[)];', lines, flags=re.IGNORECASE)]
+    return [func for func in functions if len(func) < 350]
 # \\n\s*(?:[\w\*]+\s+)?\w+\s*\([^;]*\)\s*(?:const)?\s*(?:[^;]*;)
+
+
+def functions_in_implementation(lines):
+    functions = [line_endings_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*]+\s[a-z0-9_*]+\s[a-z0-9_*]*\s*[{]', lines, flags=re.IGNORECASE)]
+    return [func for func in functions if len(func) < 350]
