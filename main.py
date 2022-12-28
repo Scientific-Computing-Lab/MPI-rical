@@ -29,6 +29,7 @@ def program_division(db):
                 copy_files(id, repo_name, headers_path, program_path, main_path, repo_dir)
 
 
-programs_db = load_json(os.path.join('database_programs.json'))
-functions_finder(programs_db)
+# programs_db = load_json(os.path.join('database_programs.json'))
+origin_db = load_json(os.path.join('database_origin.json'))
+functions_finder(origin_db)
 init_finalize_count_multiprocess(programs_db, n_cores=62)

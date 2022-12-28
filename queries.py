@@ -1,6 +1,8 @@
 import os
+import pdb
 
-from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include
+from repos_parser import write_to_json
+from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, del_comments
 from file_slice import find_init_final, comment_in_ranges
 from c_parse import functions_implementations, functions_in_header
 
@@ -44,24 +46,18 @@ def init_finalize_count(db):
     return count
 
 
-def functions_finder(db):
-    for id, repo in db.items():
-        header_funcs_path = os.path.join(repo['path'], 'header_funcs.txt')
-        if os.path.isfile(header_funcs_path):
-            funcs_file, _, _ = load_file(header_funcs_path, load_by_line=False)
-
-        for program_id, program_path in repo['programs'].items():
-            if os.path.isfile(header_funcs_path):
-                funcs_file, _, _ = load_file(header_funcs_path, load_by_line=False)
-            for fpath in files_walk(program_path):
+def functions_finder(origin_db):
+    database = {}
+    repo_idx = 0
+    for user_id, user in origin_db.keys():
+        for repo in origin_db[user_id]['repos'].values():
+            database[repo_idx] = {'name': repo['name'], 'path': repo['path'], 'headers': {}}
+            for fpath in files_walk(repo['path']):
                 lines, name, ext = load_file(fpath, load_by_line=False)
-                print(name)
-                if ext == '.h' and name not in funcs_file:
-                    print('IN')
-                    header_functions = [f_header[2:] for f_header in functions_in_header(lines)]
-                    with open(f'{header_funcs_path}', "a") as f:
-                        f.write(f'{name}{ext}\n')
-                        for func in header_functions:
-                            f.write(f'{func}\n')
+                lines = del_comments(lines, ext)
+                if ext == '.h' and name not in database[repo_idx]['headers'].keys():
+                    header_functions = [f_header for f_header in functions_in_header(lines)]
+                    database[repo_idx]['headers'][name] = header_functions
                     print(header_functions)
-
+            repo_idx += 1
+    write_to_json(database, 'header_funcs.json')

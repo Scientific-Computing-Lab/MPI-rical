@@ -1,7 +1,7 @@
 import os
 import re
 
-from files_parser import load_file, name_split
+from files_parser import load_file, name_split, line_endings_remove
 
 from pycparser import parse_file
 
@@ -60,4 +60,5 @@ def functions_implementations(lines):
 
 
 def functions_in_header(lines):
-    return [lines[slice(*match.span())] for match in re.finditer(r'[\\][n][a-z]*\s[a-z0-9_]*[(](.*?)[)];', lines, flags=re.IGNORECASE)]
+    return [line_endings_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z]*\s[a-z0-9_]*[(](.*?)[)];', lines, flags=re.IGNORECASE)]
+# \\n\s*(?:[\w\*]+\s+)?\w+\s*\([^;]*\)\s*(?:const)?\s*(?:[^;]*;)

@@ -50,6 +50,21 @@ def openmp_in_line(line, ext):
     return '#include' in line and 'omp.h' in line
 
 
+def line_endings_remove(lines):
+    lines = re.sub(r"\\n", "", lines)
+    lines = re.sub(r"\\t", "", lines)
+    lines = re.sub(r"\\r", "", lines)
+    lines = re.sub(r"\s+", " ", lines)
+    return lines
+
+
+def line_endings_correction(lines):
+    lines = re.sub(r"\\n", "\n", lines)
+    lines = re.sub(r"\\t", "\t", lines)
+    lines = re.sub(r"\\r", "\r", lines)  # \\r is new line in MAC
+    return lines
+
+
 def is_include(path, func=mpi_in_line):
     lines, name, ext = load_file(path, load_by_line=True)
     for line in lines:
@@ -69,3 +84,31 @@ def mpi_funcs_counter(path):
     for func in funcs:
         funcs_counter[func] = (funcs_counter[func] if func in funcs_counter else 0) + 1
     return funcs_counter
+
+
+def comment_matches(lines, ext):
+    if ext in FORTRAN_EXTENSIONS:
+        return [match for match in re.finditer(r'C[\s].*', lines, flags=re.IGNORECASE)]
+    return [match for match in re.finditer(r'\/\*(.*?)\*\/', lines, flags=re.IGNORECASE)]  # r'\/\*[^!]*?\*\/'
+
+
+def comment_ranges(lines, ext):
+    return [range(match.span()[0], match.span()[1]) for match in comment_matches(lines, ext)]
+
+
+def comment_in_ranges(match, lines, ext):
+    for print_range in comment_ranges(lines, ext):
+        if match.span()[0] in print_range:
+            return True
+    return False
+
+
+def del_comment_line(lines, ext):
+    pattern = r'[!][\s]*.*?[\\]*[\\][n]' if ext in FORTRAN_EXTENSIONS else r'[\/][\/].*?[\\]*[\\][n]'
+    return re.sub(pattern, '', lines, flags=re.IGNORECASE)
+
+
+def del_comments(lines, ext):
+    lines = del_comment_line(lines, ext)
+    if ext not in FORTRAN_EXTENSIONS:
+        return re.sub(r'\/\*(.*?)\*\/', '', lines, flags=re.IGNORECASE)
