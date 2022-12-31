@@ -6,7 +6,7 @@ from datetime import datetime
 
 from repos_parser import write_to_json
 from file_slice import find_init_final
-from c_parse import functions_in_header, functions_in_implementation
+from c_parse import functions_in_header, functions_in_c, functions_in_file
 from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, del_comments, comment_in_ranges
 
 
@@ -105,17 +105,18 @@ def init_finalize_count_multiprocess(db, n_cores=int(mp.cpu_count()/2)):
 
 
 def functions_finder_task(repo, queue):
-    dict = {'path': repo['path'], 'headers': {}}
+    dict = {'path': repo['path'], 'files': {}}
+    header_id = 0
     for fpath in files_walk(repo['path']):
         lines, name, ext = load_file(fpath, load_by_line=False)
         lines = del_comments(lines, ext)
-        if ext == '.h' and name not in dict['headers'].keys():
-            header_functions = [f_header for f_header in functions_in_header(lines)]
+        if ext == '.h' or ext == '.c':
+            header_functions = [f_header for f_header in functions_in_file(lines, ext)]
             if header_functions:
-                name = name + '.h'
-                dict['headers'][name] = {}
+                dict['files']['id'] = header_id
+                dict['files'][fpath] = {}
             for idx in range(len(header_functions)):
-                dict['headers'][name][idx] = header_functions[idx]
+                dict['files'][fpath][idx] = header_functions[idx]
     counter.increment(1)
     cur_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     print(f'{cur_time}: {counter.value} repos have been analyzed')
@@ -142,7 +143,7 @@ def functions_finder_multiprocess(origin_db, n_cores=mp.cpu_count()-1):
     for user_id in origin_db.keys():
         for repo in origin_db[user_id]['repos'].values():
             repos.append(repo)
-    repos = repos[:50]
+    repos = repos[:]
     print(f'Number of cores: {n_cores}')
     manager = mp.Manager()
     queue = manager.Queue()

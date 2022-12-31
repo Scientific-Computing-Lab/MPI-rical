@@ -1,7 +1,7 @@
 import os
 import re
 
-from files_parser import load_file, name_split, line_endings_remove
+from files_parser import load_file, name_split, space_remove
 
 from pycparser import parse_file
 
@@ -60,11 +60,30 @@ def functions_implementations(lines):
 
 
 def functions_in_header(lines):
-    functions = [line_endings_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9*]*\s[a-z0-9_*]*[(](.*?)[)];', lines, flags=re.IGNORECASE)]
+    functions = [space_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[(]', lines, flags=re.IGNORECASE)]
     return [func for func in functions if len(func) < 350]
+# [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s[a-z0-9_*\\]*\s*[(]
+# [\\][n][a-z0-9_*]+\s[a-z0-9_*]+\s[a-z0-9_*]*\s*[(]
+# [\\][n][a-z0-9*]*\s[a-z0-9_*]*[(](.*?)[)];
 # \\n\s*(?:[\w\*]+\s+)?\w+\s*\([^;]*\)\s*(?:const)?\s*(?:[^;]*;)
 
 
-def functions_in_implementation(lines):
-    functions = [line_endings_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*]+\s[a-z0-9_*]+\s[a-z0-9_*]*\s*[{]', lines, flags=re.IGNORECASE)]
-    return [func for func in functions if len(func) < 350]
+def prefix_include(lines):
+    return list(re.finditer(r'^if[\s(]', lines, flags=re.IGNORECASE)) + \
+           list(re.finditer(r'^else[\s(]', lines, flags=re.IGNORECASE)) + \
+           list(re.finditer(r'^case[\s]', lines, flags=re.IGNORECASE))
+
+
+def functions_in_c(lines):
+    functions = [space_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^{(;]*\([^)]*\)[^{;]*{', lines, flags=re.IGNORECASE)]
+    return [func for func in functions if len(func) < 350 and not prefix_include(func)]
+# [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^(;]*\([^)]*\)[^{;]*{
+# [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^(]*\([^)]*\)[^{;]*{
+# [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[(](.*?)[)]([\\][n])*\s*[{]
+# [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[{]
+
+
+def functions_in_file(lines, ext):
+    if ext == '.h':
+        return [functions_in_header(lines)] + [functions_in_c(lines)]
+    return functions_in_c(lines)

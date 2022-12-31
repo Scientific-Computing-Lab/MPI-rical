@@ -50,12 +50,12 @@ def openmp_in_line(line, ext):
     return '#include' in line and 'omp.h' in line
 
 
-def line_endings_remove(lines):
+def space_remove(lines):
     lines = re.sub(r"\\n", "", lines)
     lines = re.sub(r"\\t", "", lines)
     lines = re.sub(r"\\r", "", lines)
     lines = re.sub(r"\s+", " ", lines)
-    return lines
+    return lines.strip()
 
 
 def line_endings_correction(lines):
