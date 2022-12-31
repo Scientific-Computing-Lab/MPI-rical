@@ -60,8 +60,7 @@ def functions_implementations(lines):
 
 
 def functions_in_header(lines):
-    functions = [space_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[(]', lines, flags=re.IGNORECASE)]
-    return [func for func in functions if len(func) < 350]
+    return [space_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[(]', lines, flags=re.IGNORECASE)]
 # [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s[a-z0-9_*\\]*\s*[(]
 # [\\][n][a-z0-9_*]+\s[a-z0-9_*]+\s[a-z0-9_*]*\s*[(]
 # [\\][n][a-z0-9*]*\s[a-z0-9_*]*[(](.*?)[)];
@@ -75,8 +74,7 @@ def prefix_include(lines):
 
 
 def functions_in_c(lines):
-    functions = [space_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^{(;]*\([^)]*\)[^{;]*{', lines, flags=re.IGNORECASE)]
-    return [func for func in functions if len(func) < 350 and not prefix_include(func)]
+    return [space_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^{(;]*\([^)]*\)[^{;]*{', lines, flags=re.IGNORECASE)]
 # [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^(;]*\([^)]*\)[^{;]*{
 # [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^(]*\([^)]*\)[^{;]*{
 # [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[(](.*?)[)]([\\][n])*\s*[{]
@@ -84,6 +82,8 @@ def functions_in_c(lines):
 
 
 def functions_in_file(lines, ext):
+    functions = functions_in_c(lines)
     if ext == '.h':
-        return [functions_in_header(lines)] + [functions_in_c(lines)]
-    return functions_in_c(lines)
+        functions += functions_in_header(lines)
+    return [func for func in functions if len(func) < 350 and not prefix_include(func)]
+

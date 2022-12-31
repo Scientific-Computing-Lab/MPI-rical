@@ -51,17 +51,17 @@ def openmp_in_line(line, ext):
 
 
 def space_remove(lines):
-    lines = re.sub(r"\\n", "", lines)
-    lines = re.sub(r"\\t", "", lines)
-    lines = re.sub(r"\\r", "", lines)
+    lines = re.sub(r"\\n", " ", lines)  # new line in Mac OS
+    lines = re.sub(r"\\r", " ", lines)  # new line in Unix/Mac OS
+    lines = re.sub(r"\\t", " ", lines)
     lines = re.sub(r"\s+", " ", lines)
     return lines.strip()
 
 
 def line_endings_correction(lines):
     lines = re.sub(r"\\n", "\n", lines)
+    lines = re.sub(r"\\r", "\r", lines)
     lines = re.sub(r"\\t", "\t", lines)
-    lines = re.sub(r"\\r", "\r", lines)  # \\r is new line in MAC
     return lines
 
 

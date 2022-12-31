@@ -111,12 +111,12 @@ def functions_finder_task(repo, queue):
         lines, name, ext = load_file(fpath, load_by_line=False)
         lines = del_comments(lines, ext)
         if ext == '.h' or ext == '.c':
-            header_functions = [f_header for f_header in functions_in_file(lines, ext)]
-            if header_functions:
+            functions = [func for func in functions_in_file(lines, ext)]
+            if functions:
                 dict['files']['id'] = header_id
                 dict['files'][fpath] = {}
-            for idx in range(len(header_functions)):
-                dict['files'][fpath][idx] = header_functions[idx]
+            for idx in range(len(functions)):
+                dict['files'][fpath][idx] = functions[idx]
     counter.increment(1)
     cur_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     print(f'{cur_time}: {counter.value} repos have been analyzed')
@@ -133,7 +133,7 @@ def functions_finder_listener(queue):
             if message == '#done#':
                 break
     print(f'Saving functions database to a json file...')
-    write_to_json(database, 'implementation_funcs.json')
+    write_to_json(database, 'functions_in_files.json')
 
 
 def functions_finder_multiprocess(origin_db, n_cores=mp.cpu_count()-1):
@@ -143,7 +143,6 @@ def functions_finder_multiprocess(origin_db, n_cores=mp.cpu_count()-1):
     for user_id in origin_db.keys():
         for repo in origin_db[user_id]['repos'].values():
             repos.append(repo)
-    repos = repos[:]
     print(f'Number of cores: {n_cores}')
     manager = mp.Manager()
     queue = manager.Queue()
