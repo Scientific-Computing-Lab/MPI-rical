@@ -1,8 +1,8 @@
 import os
 import re
 
-from files_parser import load_file, line_endings_correction, del_comments, comment_in_ranges
-from repos_parser import make_dst_folder, FORTRAN_EXTENSIONS
+from files_parser import load_file, line_endings_correction, del_comments, comment_in_ranges, FORTRAN_EXTENSIONS
+from repos_parser import make_dst_folder
 
 
 def write_to_file(dst, lines, name, ext):

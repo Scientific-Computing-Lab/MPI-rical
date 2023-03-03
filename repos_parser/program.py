@@ -4,11 +4,13 @@ from repos_parser import PROGRAMS_MPI_DIR, REPOS_MPI_DIR, REPOS_ORIGIN_DIR, copy
 from logger import info
 
 
-def copy_files(id, name, headers_path, program_path, main_path, repo_dir):
+def copy_files(id, name, headers_path, c_files_path, program_path, main_path, repo_dir):
     copy_file(src=main_path, dst=program_path, src_origin=repo_dir)
     for header_path in headers_path:
         copy_file(src=header_path, dst=program_path, src_origin=repo_dir)
-    info(f'PROGRAM {id} has been created - Origin repo: {name}')
+    for c_file_path in c_files_path:
+        copy_file(src=c_file_path, dst=program_path, src_origin=repo_dir)
+    # info(f'PROGRAM {id} has been created - Origin repo: {name}')
 
 
 def init_folder(programs_repo_dir):

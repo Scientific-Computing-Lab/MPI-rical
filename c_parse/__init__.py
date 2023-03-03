@@ -1,9 +1,36 @@
 import os
 import re
+import pdb
 
 from files_parser import load_file, name_split, space_remove
+from repos_parser import load_json
 
 from pycparser import parse_file
+
+
+def match_funcs(pre_funcs, funcs):
+    for pre_func in pre_funcs:
+        for func in funcs:
+            start_pre_func = function_starter(pre_func)
+            start_func = function_starter(func)
+            if start_pre_func and start_func:
+                if start_pre_func[0] == start_func[0]:
+                    return True
+    return False
+
+
+def database_functions_parser(functions_db, repo_path, headers_path):
+    couples = []
+    files = functions_db[repo_path]['files']
+    if not files:
+        return couples
+    headers_path = [h_path for h_path in headers_path if h_path in list(files.keys())]
+    for h_path in headers_path:
+        for f_path, functions in files.items():
+            if os.path.splitext(f_path)[-1] == '.c':
+                if match_funcs(files[h_path]['functions'], functions['functions']):
+                    couples.append(f_path)
+    return list(set(couples))
 
 
 def is_main(lines):
@@ -17,11 +44,11 @@ def file_headers(path):
     return os.path.basename(path), [header.split('/')[-1] for header in headers]
 
 
-## TODO: add .c extractors
 class Extractor:
-    def __init__(self, main_fname, repo_headers):
+    def __init__(self, main_path, main_name, repo_headers):
         self.headers = []
-        self.main_fname = main_fname
+        self.main_path = main_path
+        self.main_name = main_name
         self.repo_headers = repo_headers
 
     def extraction(self, file_path):
@@ -29,18 +56,22 @@ class Extractor:
             return
 
         script_name, include_headers = file_headers(file_path)
-        if script_name != self.main_fname:
+        if script_name != self.main_name:
             self.headers.append(file_path)
 
         for header in include_headers:
             if header in self.repo_headers.keys():
                 self.extraction(self.repo_headers[header])
 
+    def c_files(self, function_db, repo_dir, headers_path):
+        return database_functions_parser(function_db, repo_dir, headers_path)
+
 
 def repo_parser(repos_dir, repo_name, find_headers=True, find_main=True):
     headers = {}
     mains = {}
-    for idx, (root, dirs, files) in enumerate(os.walk(os.path.join(repos_dir, repo_name))):
+    repo_path = os.path.join(repos_dir, repo_name)
+    for idx, (root, dirs, files) in enumerate(os.walk(repo_path)):
         for fname in files:
             _, ext = name_split(fname)
             if find_headers:
@@ -60,7 +91,7 @@ def functions_implementations(lines):
 
 
 def functions_in_header(lines):
-    return [space_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[(]', lines, flags=re.IGNORECASE)]
+    return [space_remove(match.group()) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[(]', lines, flags=re.IGNORECASE)]
 # [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s[a-z0-9_*\\]*\s*[(]
 # [\\][n][a-z0-9_*]+\s[a-z0-9_*]+\s[a-z0-9_*]*\s*[(]
 # [\\][n][a-z0-9*]*\s[a-z0-9_*]*[(](.*?)[)];
@@ -74,7 +105,7 @@ def prefix_include(lines):
 
 
 def functions_in_c(lines):
-    return [space_remove(lines[slice(*match.span())]) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^{(;]*\([^)]*\)[^{;]*{', lines, flags=re.IGNORECASE)]
+    return [space_remove(match.group()) for match in re.finditer(r'[\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^{(;]*\([^)]*\)[^{;]*{', lines, flags=re.IGNORECASE)]
 # [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^(;]*\([^)]*\)[^{;]*{
 # [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[^(]*\([^)]*\)[^{;]*{
 # [\\][n][a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[(](.*?)[)]([\\][n])*\s*[{]
@@ -87,3 +118,6 @@ def functions_in_file(lines, ext):
         functions += functions_in_header(lines)
     return [func for func in functions if len(func) < 350 and not prefix_include(func)]
 
+
+def function_starter(function):
+    return [space_remove(match.group()) for match in re.finditer(r'[a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[({]', function, flags=re.IGNORECASE)]

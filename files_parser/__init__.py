@@ -1,8 +1,10 @@
 import os
 import re
 
-from repos_parser import FORTRAN_EXTENSIONS
 from logger import set_logger, info
+
+EXTENSIONS = ['.c', '.f', '.f77', '.f90', '.f95', '.f03', '.cc', '.cpp', '.cxx', '.h']
+FORTRAN_EXTENSIONS = ['.f', '.f77', '.f90', '.f95', '.f03']
 
 
 def files_walk(root_dir):

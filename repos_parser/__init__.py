@@ -5,15 +5,13 @@ import shutil
 import collections
 
 from datetime import date
+from files_parser import files_walk, is_include
 
 REPOS_ORIGIN_DIR = '/home/nadavsc/LIGHTBITS/data_gathering_script/git_repos'
 REPOS_MPI_DIR = '/home/nadavsc/LIGHTBITS/code2mpi/repositories_MPI'
 REPOS_MPI_SLICED_DIR = '/home/nadavsc/LIGHTBITS/code2mpi/repositories_MPI_SLICED'
 PROGRAMS_MPI_DIR = '/home/nadavsc/LIGHTBITS/code2mpi/programs'
-EXTENSIONS = ['.c', '.f', '.f77', '.f90', '.f95', '.f03', '.cc', '.cpp', '.cxx', '.h']
 START_IDX = len(os.path.join(os.getcwd(), REPOS_ORIGIN_DIR)) + 1
-FORTRAN_EXTENSIONS = ['.f', '.f77', '.f90', '.f95', '.f03']
-
 script_types = {}
 
 
@@ -29,6 +27,13 @@ def write_to_json(data, path):
 
     with open(path, "w") as f:
         json.dump(data, f, indent=4)
+
+
+def repo_mpi_include(repo_path):
+    for fpath in files_walk(repo_path):
+        if is_include(fpath):
+            return True
+    return False
 
 
 def get_repos(user_dir, id=0):

@@ -4,7 +4,7 @@ import pdb
 from repos_parser import write_to_json
 from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, del_comments
 from file_slice import find_init_final, comment_in_ranges
-from c_parse import functions_implementations, functions_in_header
+from c_parse import functions_implementations, functions_in_header, function_starter
 
 from logger import set_logger, info
 
@@ -51,8 +51,6 @@ def functions_finder(origin_db):
     repo_idx = 0
     for user_id in origin_db.keys():
         for repo in origin_db[user_id]['repos'].values():
-            if repo['name'] == 'lemon':
-                print('YADA')
             database[repo_idx] = {'name': repo['name'], 'path': repo['path'], 'headers': {}}
             for fpath in files_walk(repo['path']):
                 lines, name, ext = load_file(fpath, load_by_line=False)
@@ -63,3 +61,7 @@ def functions_finder(origin_db):
                     print(header_functions)
             repo_idx += 1
     write_to_json(database, 'header_funcs.json')
+
+
+
+
