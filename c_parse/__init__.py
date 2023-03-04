@@ -38,10 +38,25 @@ def is_main(lines):
         return True
 
 
+def include_headers(path, real_headers, exclude_headers, all_headers=[]):
+    lines = load_file(path, load_by_line=False)
+    headers = [header for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
+    if not headers and os.path.basename(path) not in real_headers and not path.endswith('.c'):
+        all_headers.append(os.path.basename(path))
+        return all_headers
+
+    for header in headers:
+        if header in real_headers:
+            include_headers(real_headers[header], real_headers, exclude_headers, all_headers)
+        elif header not in exclude_headers and not path.endswith('.c'):
+            all_headers.append(header)
+    return list(set(all_headers))
+
+
 def file_headers(path):
     lines = load_file(path, load_by_line=False)
-    headers = [f'{header}.h' for header in re.findall(f'[<"](.*?).h[">]', str(lines), flags=re.IGNORECASE)]
-    return os.path.basename(path), [header.split('/')[-1] for header in headers]
+    headers = [header for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
+    return os.path.basename(path), headers
 
 
 class Extractor:

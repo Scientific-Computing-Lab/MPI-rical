@@ -1,0 +1,1 @@
+exclude_headers: [mpi.h, omp.h, stdint.h, stdlib.h, string.h, stdio.h, time.h, math.h]
