@@ -1,0 +1,78 @@
+from __future__ import print_function
+import os
+import sys
+
+project_path = r'/home/nadavsc/LIGHTBITS/code2mpi'
+sys.path.append(project_path)
+sys.path.append(os.path.join(project_path, 'repos_parser'))
+sys.path.append(os.path.join(project_path, 'files_parser'))
+sys.path.append(os.path.join(project_path, 'c_parse'))
+sys.path.append(os.path.join(project_path, 'parsers'))
+
+import pdb
+import shutil
+from pycparser import parse_file
+from pathlib import Path
+
+from c_parse import replace_headers_ext, repo_parser, include_headers
+from func_visitors import FuncDefVisitor, FuncCallVisitor
+from files_parser import load_file, line_endings_correction
+from config import exclude_headers
+
+
+def func_export(ast):
+    func_def = FuncDefVisitor(ast)
+    nodes = func_def.funcdefs
+    func_call = FuncCallVisitor(nodes)
+    funcs = func_call.func_calls
+    return funcs
+
+
+def write_fake_code(code, fake_code_path, c_files_headers):
+    for c_file_header in c_files_headers:
+        shutil.copy(src=real_headers[f'{c_file_header[:-2]}'], dst=os.path.join(fake_code_path, c_file_header))
+    with open(os.path.join(fake_code_path, os.path.basename(file_path)), 'w') as f:
+        f.write(line_endings_correction(code))
+
+
+def fake_code_handler(repo_dir, mains, real_headers, c_files):
+    fake_code_path = os.path.join(repo_dir, 'fake_code')
+    try:
+        os.mkdir(fake_code_path)
+    except:
+        print('Fake code path is already exists...')
+    files_paths = [c_path for c_name, c_path in c_files.items()
+                   for h_name, h_path in real_headers.items() if c_name == h_name]
+    files_paths += mains.values()
+
+    for file_path in files_paths:
+        lines, _, _ = load_file(file_path, load_by_line=False)
+        code, c_files_headers = replace_headers_ext(lines[2:-1], real_headers)
+        write_fake_code(code, fake_code_path, c_files_headers)
+
+
+def fake_headers_handler(fake_headers_path, repo_headers, file_path):
+    if not os.path.isdir(fake_headers_path):
+        os.mkdir(fake_headers_path)
+    headers = include_headers(file_path, repo_headers, exclude_headers)
+    [Path(os.path.join(fake_headers_path, fname)).touch() for fname in headers]
+
+
+if __name__ == "__main__":
+    origin_folder = r"/home/nadavsc/LIGHTBITS/code2mpi/c_parse/test/lemon"
+    file_path = r"/home/nadavsc/LIGHTBITS/code2mpi/c_parse/test/lemon/fake_code/lemon_benchmark.c"
+
+    fake_headers_path = os.path.join(origin_folder, 'fake_headers')
+    basic_fake_headers_path = r"/home/nadavsc/LIGHTBITS/code2mpi/c_parse/pycparser/utils/fake_libc_include"
+    mains, real_headers, c_files = repo_parser(repo_dir=origin_folder, with_ext=False)
+
+    fake_code_handler(origin_folder, mains, real_headers, c_files)
+    fake_headers_handler(fake_headers_path, real_headers, file_path)
+    pdb.set_trace()
+    program_dirs = [f'-I{os.path.join(root, dir)}' for (root, dirs, fnames) in os.walk(origin_folder) for dir in dirs]
+    cpp_args = ["-E"] + ["-D__attribute__(x)="] + [f'-I{origin_folder}'] + program_dirs + [f"-I{basic_fake_headers_path}"] + [f"-I{fake_headers_path}"]
+    ast = parse_file(file_path, use_cpp=True, cpp_path='mpicc', cpp_args=cpp_args)
+    pdb.set_trace()
+    print(func_export(ast))
+
+# mpicc -E -D'__attribute__(x)=' -Itest/lemon/check -Ipycparser/utils/fake_libc_include test/lemon/check/lemon_benchmark.c  > lemon_benchmark_pp.c

@@ -38,6 +38,16 @@ def is_main(lines):
         return True
 
 
+def replace_headers_ext(code, real_headers):
+    c_files_headers = []
+    headers = [header for header in re.findall(f'#include[\s]*[<"](.*?)[">]', code, flags=re.IGNORECASE)]
+    for header in headers:
+        if header[:-2] in real_headers:
+            code = code.replace(header, f'{header[:-1]}c')
+            c_files_headers.append(f'{header[:-1]}c')
+    return code, c_files_headers
+
+
 def include_headers(path, real_headers, exclude_headers, all_headers=[]):
     lines = load_file(path, load_by_line=False)
     headers = [header for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
@@ -82,23 +92,24 @@ class Extractor:
         return database_functions_parser(function_db, repo_dir, headers_path)
 
 
-def repo_parser(repos_dir, repo_name, find_headers=True, find_main=True):
-    headers = {}
+def repo_parser(repo_dir, with_ext=True):
     mains = {}
-    repo_path = os.path.join(repos_dir, repo_name)
-    for idx, (root, dirs, files) in enumerate(os.walk(repo_path)):
+    headers = {}
+    c_files = {}
+    for idx, (root, dirs, files) in enumerate(os.walk(repo_dir)):
         for fname in files:
-            _, ext = name_split(fname)
-            if find_headers:
-                if ext == '.h':
-                    headers[fname] = os.path.join(root, fname)
-            if find_main:
-                if ext == '.c':
-                    path = os.path.join(root, fname)
-                    lines, _, _ = load_file(path, load_by_line=False)
-                    if is_main(lines):
-                        mains[path] = fname
-    return mains, headers
+            origin_name, ext = name_split(fname)
+            name = fname if with_ext else origin_name
+            path = os.path.join(root, fname)
+            if ext == '.h':
+                headers[name] = path
+            if ext == '.c':
+                lines, _, _ = load_file(path, load_by_line=False)
+                if is_main(lines):
+                    mains[name] = path
+                else:
+                    c_files[name] = path
+    return mains, headers, c_files
 
 
 def functions_implementations(lines):

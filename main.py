@@ -28,11 +28,11 @@ def program_division(origin_db, functions_db):
             repo_name, repo_dir = repo_details['name'], repo_details['path']
             programs_user_dir = os.path.join(PROGRAMS_MPI_DIR, user['name'])
             programs_repo_dir = os.path.join(programs_user_dir, repo_name)
-            mains, repo_headers = repo_parser(REPOS_ORIGIN_DIR, repo_dir)
+            mains, real_headers, _ = repo_parser(repo_dir)
             if mains and not os.path.exists(programs_user_dir):
                 os.makedirs(programs_user_dir)
-            for main_path, main_name in mains.items():
-                extractor = Extractor(main_path, main_name, repo_headers)
+            for main_name, main_path in mains.items():
+                extractor = Extractor(main_path, main_name, real_headers)
                 extractor.extraction(main_path)
                 headers_path = extractor.headers
                 c_files_path = extractor.c_files(functions_db, repo_dir, headers_path)
