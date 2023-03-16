@@ -50,7 +50,7 @@ def replace_headers_ext(code, real_headers):
 
 def include_headers(path, real_headers, exclude_headers, all_headers=[]):
     lines = load_file(path, load_by_line=False)
-    headers = [os.path.basename(header) for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
+    headers = [header for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
     if not headers and os.path.basename(path) not in real_headers and not path.endswith('.c'):
         all_headers.append(os.path.basename(path))
         return all_headers

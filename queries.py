@@ -1,4 +1,5 @@
 import os
+import shutil
 import pdb
 
 from repos_parser import write_to_json, save_pkl
@@ -64,22 +65,50 @@ def functions_finder(origin_db):
     write_to_json(database, 'header_funcs.json')
 
 
+def clear_fake(fake_headers_path):
+    if os.path.exists(fake_headers_path):
+        print('Removed fake_headers')
+        shutil.rmtree(fake_headers_path)
+    if os.path.exists(os.path.join(os.path.dirname(fake_headers_path), 'fake_files')):
+        print('Removed fake_files')
+        shutil.rmtree(fake_headers_path)
+
+
+def init_folders(save_repo_outputs_dir, idx):
+    save_outputs_dir = os.path.join(save_repo_outputs_dir, idx)
+    fake_headers_path = os.path.join(save_outputs_dir, 'fake_headers')
+    os.mkdir(save_outputs_dir)
+    os.mkdir(fake_headers_path)
+    return save_outputs_dir, fake_headers_path
+
+
 def ast_generator(programs_db):
+    count_success = 0
+    count_failure = 0
     basic_fake_headers_path = r"/home/nadavsc/LIGHTBITS/code2mpi/c_parse/pycparser/utils/fake_libc_include"
     for repo in programs_db.values():
-        for program_path in repo['programs'].values():
+        save_repo_outputs_dir = os.path.join(os.path.dirname(repo['programs']['0']), 'outputs')
+        os.mkdir(save_repo_outputs_dir)
+        for idx, program_path in repo['programs'].items():
+            save_outputs_dir, fake_headers_path = init_folders(save_repo_outputs_dir, idx)
+
             mains, real_headers, c_files = repo_parser(repo_dir=program_path, with_ext=True)
             main_name, main_path = list(mains.keys())[0], list(mains.values())[0]
+            print(main_path)
             code, _, _ = load_file(main_path, load_by_line=False)
-            pdb.set_trace()
-            ast_file = ast(code=code,
-                           main_name=main_name,
-                           main_path=main_path,
-                           origin_folder=program_path,
-                           real_headers=real_headers,
-                           basic_fake_headers_path=basic_fake_headers_path)
-            pdb.set_trace()
-            save_pkl(ast, os.path.join(program_path, f'{main_name[:-2]}_ast'))
-            print(ast_file)
+            try:
+                ast_file = ast(code=code,
+                               main_name=main_name,
+                               main_path=main_path,
+                               origin_folder=program_path,
+                               real_headers=real_headers,
+                               save_outputs_dir=save_outputs_dir,
+                               fake_headers_path=fake_headers_path,
+                               basic_fake_headers_path=basic_fake_headers_path)
+                save_pkl(ast_file, os.path.join(save_outputs_dir, f'ast_{main_name[:-2]}'))
+                count_success += 1
+            except:
+                count_failure += 1
+            info()
     return
 

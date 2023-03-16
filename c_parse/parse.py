@@ -52,32 +52,33 @@ def fake_code_handler(repo_dir, mains, real_headers, c_files):
 
 
 def fake_headers_handler(fake_headers_path, repo_headers, file_path):
-    headers = include_headers(file_path, repo_headers, exclude_headers)
+    headers = include_headers(file_path, repo_headers, exclude_headers, [])
     headers_paths = []
     for fname in headers:
+        if fname.split('/')[0] == '..':
+            fname = fname[3:]
         path = os.path.join(fake_headers_path, fname)
         headers_paths.append(path)
-        pdb.set_trace()
         os.makedirs(os.path.dirname(path), exist_ok=True)
     [Path(header_path).touch() for header_path in headers_paths]
 
 
-def fake_main_handler(code, main_name, origin_folder):
+def fake_main_handler(code, main_name, save_outputs_dir):
     code = remove_comments(code)
-    file_path = os.path.join(origin_folder, f'{main_name}_proc')
+    code = code.strip()
+
+    file_path = os.path.join(save_outputs_dir, f'proc_{main_name}')
     with open(file_path, 'w') as f:
         f.write(code)
-    return file_path
 
 
-def ast(code, main_name, main_path, origin_folder, real_headers, basic_fake_headers_path):
-    fake_headers_path = os.path.join(origin_folder, 'fake_headers')
+def ast(code, main_name, main_path, origin_folder, real_headers, save_outputs_dir, fake_headers_path, basic_fake_headers_path):
     fake_headers_handler(fake_headers_path, real_headers, main_path)
-    file_path = fake_main_handler(code, main_name, origin_folder)
+    fake_main_handler(code, main_name, save_outputs_dir)
 
     program_dirs = [f'-I{os.path.join(root, dir)}' for (root, dirs, fnames) in os.walk(origin_folder) for dir in dirs]
     cpp_args = ["-E"] + ["-D__attribute__(x)="] + [f'-I{origin_folder}'] + program_dirs + [f"-I{basic_fake_headers_path}"] + [f"-I{fake_headers_path}"]
-    return parse_file(file_path, use_cpp=True, cpp_path='mpicc', cpp_args=cpp_args)
+    return parse_file(main_path, use_cpp=True, cpp_path='mpicc', cpp_args=cpp_args)
 
 
 if __name__ == "__main__":
