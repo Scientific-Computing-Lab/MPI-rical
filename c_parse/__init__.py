@@ -147,3 +147,20 @@ def functions_in_file(lines, ext):
 
 def function_starter(function):
     return [space_remove(match.group()) for match in re.finditer(r'[a-z0-9_*\\]+\s[a-z0-9_*\\]+\s*[a-z0-9_*\\]*\s*[({]', function, flags=re.IGNORECASE)]
+
+
+def remove_block_comments(lines):
+    matches = re.findall(r'/\*.*?\*/', lines, re.DOTALL)
+    for match in matches:
+        lines = lines.replace(match, '')
+        return lines
+
+
+def remove_singleline_comments(lines):
+    return re.sub(r'//.*$', '', lines, flags=re.MULTILINE)
+
+
+def remove_comments(lines):
+    lines = remove_block_comments(lines)
+    lines = remove_singleline_comments(lines)
+    return lines

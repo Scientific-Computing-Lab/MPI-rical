@@ -16,7 +16,7 @@ def files_walk(root_dir):
 
 def load_file(path, load_by_line=True):
     name, ext = name_split(os.path.basename(path))
-    with open(path, 'rb') as f:
+    with open(path, 'r') as f:
         if load_by_line:
             return f.readlines(), name, ext
         return str(f.read()), name, ext
@@ -103,14 +103,3 @@ def comment_in_ranges(match, lines, ext):
         if match.span()[0] in print_range:
             return True
     return False
-
-
-def del_comment_line(lines, ext):
-    pattern = r'[!][\s]*.*?[\\]*[\\][n]' if ext in FORTRAN_EXTENSIONS else r'[\/][\/].*?[\\]*[\\][n]'
-    return re.sub(pattern, '', lines, flags=re.IGNORECASE)
-
-
-def del_comments(lines, ext):
-    lines = del_comment_line(lines, ext)
-    if ext not in FORTRAN_EXTENSIONS:
-        return re.sub(r'\/\*(.*?)\*\/', '', lines, flags=re.IGNORECASE)
