@@ -2,6 +2,7 @@ import os
 import json
 import re
 import shutil
+import pickle
 import collections
 
 from datetime import date
@@ -13,6 +14,11 @@ REPOS_MPI_SLICED_DIR = '/home/nadavsc/LIGHTBITS/code2mpi/repositories_MPI_SLICED
 PROGRAMS_MPI_DIR = '/home/nadavsc/LIGHTBITS/code2mpi/programs'
 START_IDX = len(os.path.join(os.getcwd(), REPOS_ORIGIN_DIR)) + 1
 script_types = {}
+
+
+def save_pkl(data, path):
+    with open(f'{path}.pkl', 'wb') as f:
+        pickle.dump(data, f)
 
 
 def load_json(path):

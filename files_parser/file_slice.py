@@ -1,8 +1,9 @@
 import os
 import re
 
-from files_parser import load_file, line_endings_correction, del_comments, comment_in_ranges, FORTRAN_EXTENSIONS
+from files_parser import load_file, line_endings_correction, comment_in_ranges, FORTRAN_EXTENSIONS
 from repos_parser import make_dst_folder
+from c_parse import remove_comments
 
 
 def write_to_file(dst, lines, name, ext):
@@ -13,7 +14,7 @@ def write_to_file(dst, lines, name, ext):
 
 def find_init_final(lines, ext, rm_comments=True):
     if rm_comments:
-        lines = del_comments(lines, ext)
+        lines = remove_comments(lines)  # remove C comments only
     init_match = re.search(r'[n]\s*[a-z^n]*\s*MPI_Init.*?[\\]*[\\][n]', lines, flags=re.IGNORECASE)
     finalize_matches = [match for match in re.finditer(r'MPI_Finalize[^\\]*', lines, flags=re.IGNORECASE)]
     return lines, init_match, finalize_matches

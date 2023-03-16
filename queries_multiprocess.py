@@ -9,8 +9,8 @@ from datetime import datetime
 from repos_parser import write_to_json, PROGRAMS_MPI_DIR, REPOS_ORIGIN_DIR
 from file_slice import find_init_final
 from program import init_folder, copy_files
-from c_parse import functions_in_header, functions_in_c, functions_in_file, repo_parser, Extractor
-from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, del_comments, comment_in_ranges
+from c_parse import functions_in_header, functions_in_c, functions_in_file, repo_parser, Extractor, remove_comments
+from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, comment_in_ranges
 
 
 class Counter(object):
@@ -111,7 +111,7 @@ def functions_finder_task(repo, queue):
     dict = {'files': {}}
     for fpath in files_walk(repo['path']):
         lines, name, ext = load_file(fpath, load_by_line=False)
-        lines = del_comments(lines, ext)
+        lines = remove_comments(lines)  ## TODO: generalize to both C and Fortran
         if ext == '.h' or ext == '.c':
             functions = [func for func in functions_in_file(lines, ext)]
             if functions:

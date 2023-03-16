@@ -8,7 +8,7 @@ sys.path.append(os.path.join(project_path, 'files_parser'))
 sys.path.append(os.path.join(project_path, 'c_parse'))
 
 
-from queries import functions_finder
+from queries import functions_finder, ast_generator
 from queries_multiprocess import openmp_mpi_count_multiprocess, init_finalize_count_multiprocess, functions_finder_multiprocess, program_division_multiprocess
 from database import db_origin_generate
 from repos_parser import PROGRAMS_MPI_DIR, REPOS_MPI_DIR, REPOS_ORIGIN_DIR
@@ -40,11 +40,5 @@ def program_division(origin_db, functions_db):
                 copy_files(id, repo_name, headers_path, c_files_path, program_path, main_path, repo_dir)
 
 
-# # programs_db = load_json(os.path.join('database_programs.json'))
-# origin_db = load_json(os.path.join('database_origin.json'))
-origin_mpi_db = load_json(os.path.join('database_MPI_origin.json'))
-functions_db = load_json(os.path.join('database_functions.json'))
-program_division_multiprocess(origin_mpi_db, functions_db)
-# program_division(origin_db, functions_db)
-# # functions_finder_multiprocess(origin_db)
-# # init_finalize_count_multiprocess(programs_db, n_cores=62)
+programs_db = load_json(os.path.join('DB', 'database_programs.json'))
+ast_generator(programs_db)

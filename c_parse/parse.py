@@ -14,9 +14,9 @@ import shutil
 from pycparser import parse_file
 from pathlib import Path
 
-from c_parse import replace_headers_ext, repo_parser, include_headers
+from c_parse import replace_headers_ext, repo_parser, include_headers, remove_comments
 from func_visitors import FuncDefVisitor, FuncCallVisitor
-from files_parser import load_file, line_endings_correction
+from files_parser import load_file
 from config import exclude_headers
 
 
@@ -32,7 +32,7 @@ def write_fake_code(code, fake_code_path, c_files_headers):
     for c_file_header in c_files_headers:
         shutil.copy(src=real_headers[f'{c_file_header[:-2]}'], dst=os.path.join(fake_code_path, c_file_header))
     with open(os.path.join(fake_code_path, os.path.basename(file_path)), 'w') as f:
-        f.write(line_endings_correction(code))
+        f.write(code)
 
 
 def fake_code_handler(repo_dir, mains, real_headers, c_files):
@@ -47,15 +47,37 @@ def fake_code_handler(repo_dir, mains, real_headers, c_files):
 
     for file_path in files_paths:
         lines, _, _ = load_file(file_path, load_by_line=False)
-        code, c_files_headers = replace_headers_ext(lines[2:-1], real_headers)
+        code, c_files_headers = replace_headers_ext(lines, real_headers)
         write_fake_code(code, fake_code_path, c_files_headers)
 
 
 def fake_headers_handler(fake_headers_path, repo_headers, file_path):
-    if not os.path.isdir(fake_headers_path):
-        os.mkdir(fake_headers_path)
     headers = include_headers(file_path, repo_headers, exclude_headers)
-    [Path(os.path.join(fake_headers_path, fname)).touch() for fname in headers]
+    headers_paths = []
+    for fname in headers:
+        path = os.path.join(fake_headers_path, fname)
+        headers_paths.append(path)
+        pdb.set_trace()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    [Path(header_path).touch() for header_path in headers_paths]
+
+
+def fake_main_handler(code, main_name, origin_folder):
+    code = remove_comments(code)
+    file_path = os.path.join(origin_folder, f'{main_name}_proc')
+    with open(file_path, 'w') as f:
+        f.write(code)
+    return file_path
+
+
+def ast(code, main_name, main_path, origin_folder, real_headers, basic_fake_headers_path):
+    fake_headers_path = os.path.join(origin_folder, 'fake_headers')
+    fake_headers_handler(fake_headers_path, real_headers, main_path)
+    file_path = fake_main_handler(code, main_name, origin_folder)
+
+    program_dirs = [f'-I{os.path.join(root, dir)}' for (root, dirs, fnames) in os.walk(origin_folder) for dir in dirs]
+    cpp_args = ["-E"] + ["-D__attribute__(x)="] + [f'-I{origin_folder}'] + program_dirs + [f"-I{basic_fake_headers_path}"] + [f"-I{fake_headers_path}"]
+    return parse_file(file_path, use_cpp=True, cpp_path='mpicc', cpp_args=cpp_args)
 
 
 if __name__ == "__main__":

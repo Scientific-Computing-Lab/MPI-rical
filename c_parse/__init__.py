@@ -50,7 +50,7 @@ def replace_headers_ext(code, real_headers):
 
 def include_headers(path, real_headers, exclude_headers, all_headers=[]):
     lines = load_file(path, load_by_line=False)
-    headers = [header for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
+    headers = [os.path.basename(header) for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
     if not headers and os.path.basename(path) not in real_headers and not path.endswith('.c'):
         all_headers.append(os.path.basename(path))
         return all_headers
@@ -58,7 +58,7 @@ def include_headers(path, real_headers, exclude_headers, all_headers=[]):
     for header in headers:
         if header in real_headers:
             include_headers(real_headers[header], real_headers, exclude_headers, all_headers)
-        elif header not in exclude_headers and not path.endswith('.c'):
+        elif header not in exclude_headers and header[-2:] != '.c':
             all_headers.append(header)
     return list(set(all_headers))
 
@@ -153,7 +153,7 @@ def remove_block_comments(lines):
     matches = re.findall(r'/\*.*?\*/', lines, re.DOTALL)
     for match in matches:
         lines = lines.replace(match, '')
-        return lines
+    return lines
 
 
 def remove_singleline_comments(lines):
