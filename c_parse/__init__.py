@@ -5,7 +5,7 @@ import pdb
 from files_parser import load_file, name_split, space_remove
 from repos_parser import load_json
 
-from pycparser import parse_file
+from config import exclude_headers
 
 
 def match_funcs(pre_funcs, funcs):
@@ -48,21 +48,6 @@ def replace_headers_ext(code, real_headers):
     return code, c_files_headers
 
 
-def include_headers(path, real_headers, exclude_headers, all_headers=[]):
-    lines = load_file(path, load_by_line=False)
-    headers = [header for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
-    if not headers and os.path.basename(path) not in real_headers and not path.endswith('.c'):
-        all_headers.append(os.path.basename(path))
-        return all_headers
-
-    for header in headers:
-        if header in real_headers:
-            include_headers(real_headers[header], real_headers, exclude_headers, all_headers)
-        elif header not in exclude_headers and header[-2:] != '.c':
-            all_headers.append(header)
-    return list(set(all_headers))
-
-
 def file_headers(path):
     lines = load_file(path, load_by_line=False)
     headers = [header for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
@@ -70,26 +55,47 @@ def file_headers(path):
 
 
 class Extractor:
-    def __init__(self, main_path, main_name, repo_headers):
-        self.headers = []
+    def __init__(self, real_headers, main_path='', main_name=''):
+        self.headers = {}
+        self.headers_path = []
+        self.visit_headers = []
         self.main_path = main_path
         self.main_name = main_name
-        self.repo_headers = repo_headers
+        self.real_headers = real_headers
 
     def extraction(self, file_path):
-        if file_path in self.headers:
+        if file_path in self.headers_path:
             return
 
         script_name, include_headers = file_headers(file_path)
         if script_name != self.main_name:
-            self.headers.append(file_path)
+            self.headers_path.append(file_path)
 
         for header in include_headers:
-            if header in self.repo_headers.keys():
-                self.extraction(self.repo_headers[header])
+            if header in self.real_headers.keys():
+                self.extraction(self.real_headers[header])
 
     def c_files(self, function_db, repo_dir, headers_path):
         return database_functions_parser(function_db, repo_dir, headers_path)
+
+    def attach_path(self, path, fnames):
+        return dict(zip([os.path.join(path, fname) if fname[:2] != '..' else os.path.join(os.path.dirname(path), fname[3:]) for fname in fnames], fnames))
+
+    def include_headers(self, path, name):
+        self.visit_headers.append(path)
+        headers = self.attach_path(os.path.dirname(path), file_headers(path)[1])
+
+        if not headers and path not in self.real_headers and not path.endswith('.c'):
+            self.headers[path] = name
+            return self.headers
+
+        for header_path, header_name in headers.items():
+            if header_path not in self.visit_headers:
+                if header_path in self.real_headers and header_path:
+                    self.include_headers(header_path, header_name)
+                elif os.path.basename(header_path) not in exclude_headers and header_path[-2:] != '.c':
+                    self.headers[header_path] = header_name
+        return self.headers
 
 
 def repo_parser(repo_dir, with_ext=True):
@@ -102,13 +108,13 @@ def repo_parser(repo_dir, with_ext=True):
             name = fname if with_ext else origin_name
             path = os.path.join(root, fname)
             if ext == '.h':
-                headers[name] = path
+                headers[path] = name
             if ext == '.c':
                 lines, _, _ = load_file(path, load_by_line=False)
                 if is_main(lines):
-                    mains[name] = path
+                    mains[path] = name
                 else:
-                    c_files[name] = path
+                    c_files[path] = name
     return mains, headers, c_files
 
 

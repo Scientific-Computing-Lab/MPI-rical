@@ -1,1 +1,13 @@
-exclude_headers: [mpi.h, omp.h, stdint.h, stdlib.h, string.h, stdio.h, time.h, math.h]
+exclude_headers: [mpi.h,
+                  omp.h,
+                  stdint.h,
+                  stdlib.h,
+                  string.h,
+                  stdio.h,
+                  time.h,
+                  math.h,
+                  unistd.h,
+                  sched.h,
+                  glibc-sched.h,
+                  stddef.h,
+                  limits.h]

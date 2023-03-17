@@ -14,7 +14,7 @@ import shutil
 from pycparser import parse_file
 from pathlib import Path
 
-from c_parse import replace_headers_ext, repo_parser, include_headers, remove_comments
+from c_parse import replace_headers_ext, repo_parser, Extractor, remove_comments
 from func_visitors import FuncDefVisitor, FuncCallVisitor
 from files_parser import load_file
 from config import exclude_headers
@@ -52,12 +52,13 @@ def fake_code_handler(repo_dir, mains, real_headers, c_files):
 
 
 def fake_headers_handler(fake_headers_path, repo_headers, file_path):
-    headers = include_headers(file_path, repo_headers, exclude_headers, [])
+    extractor = Extractor(real_headers=repo_headers)
+    headers = extractor.include_headers(path=file_path, name=os.path.basename(file_path))
+
     headers_paths = []
-    for fname in headers:
-        if fname.split('/')[0] == '..':
-            fname = fname[3:]
-        path = os.path.join(fake_headers_path, fname)
+    for header_name in headers.values():
+        header_name = header_name[3:] if header_name[:2] == '..' else header_name
+        path = os.path.join(fake_headers_path, header_name)
         headers_paths.append(path)
         os.makedirs(os.path.dirname(path), exist_ok=True)
     [Path(header_path).touch() for header_path in headers_paths]

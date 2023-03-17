@@ -16,10 +16,13 @@ def files_walk(root_dir):
 
 def load_file(path, load_by_line=True):
     name, ext = name_split(os.path.basename(path))
-    with open(path, 'r') as f:
-        if load_by_line:
-            return f.readlines(), name, ext
-        return str(f.read()), name, ext
+    try:
+        with open(path, 'r') as f:
+            code = f.readlines() if load_by_line else str(f.read())
+    except:
+        with open(path, 'rb') as f:
+            code = f.read().decode('latin1')
+    return code, name, ext
 
 
 def name_split(filename):
