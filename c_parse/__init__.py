@@ -49,8 +49,8 @@ def replace_headers_ext(code, real_headers):
 
 
 def file_headers(path):
-    lines = load_file(path, load_by_line=False)
-    headers = [header for header in re.findall(f'#include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
+    lines, _, _ = load_file(path, load_by_line=False)
+    headers = [header for header in re.findall(f'#[\s]*include[\s]*[<"](.*?)[">]', str(lines), flags=re.IGNORECASE)]
     return os.path.basename(path), headers
 
 
@@ -79,18 +79,27 @@ class Extractor:
     def c_files(self, function_db, repo_dir, headers_path):
         return database_functions_parser(function_db, repo_dir, headers_path)
 
-    def path_match(self, fname):
-        if self.real_headers:
-            for key in self.real_headers:
-                if self.real_headers[key] == fname:
-                    return key
-        if fname not in exclude_headers:
-            self.fake_headers.append(fname)
+    def is_real(self, fname):
+        for path in self.real_headers.keys():
+            if path[-len(fname):] == fname:
+                return path
+        return None
+
+    def path_match(self, headers_names):
+        headers = {}
+        for fname in headers_names:
+            if self.real_headers:
+                path = self.is_real(fname)
+                if path:
+                    headers[path] = fname
+                elif fname not in exclude_headers:
+                    self.fake_headers.append(fname)
+        return headers
 
     def include_headers(self, path):
         self.visit_headers.append(path)
         _, headers_names = file_headers(path)
-        headers = dict(zip([self.path_match(headers_name) for headers_name in headers_names], headers_names))
+        headers = self.path_match(headers_names)
 
         for header_path, header_name in headers.items():
             if header_path not in self.visit_headers:
