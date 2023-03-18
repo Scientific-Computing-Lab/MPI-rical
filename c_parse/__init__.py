@@ -57,6 +57,7 @@ def file_headers(path):
 class Extractor:
     def __init__(self, real_headers, main_path='', main_name=''):
         self.headers = {}
+        self.fake_headers = []
         self.headers_path = []
         self.visit_headers = []
         self.main_path = main_path
@@ -78,24 +79,24 @@ class Extractor:
     def c_files(self, function_db, repo_dir, headers_path):
         return database_functions_parser(function_db, repo_dir, headers_path)
 
-    def attach_path(self, path, fnames):
-        return dict(zip([os.path.join(path, fname) if fname[:2] != '..' else os.path.join(os.path.dirname(path), fname[3:]) for fname in fnames], fnames))
+    def path_match(self, fname):
+        if self.real_headers:
+            for key in self.real_headers:
+                if self.real_headers[key] == fname:
+                    return key
+        if fname not in exclude_headers:
+            self.fake_headers.append(fname)
 
-    def include_headers(self, path, name):
+    def include_headers(self, path):
         self.visit_headers.append(path)
-        headers = self.attach_path(os.path.dirname(path), file_headers(path)[1])
-
-        if not headers and path not in self.real_headers and not path.endswith('.c'):
-            self.headers[path] = name
-            return self.headers
+        _, headers_names = file_headers(path)
+        headers = dict(zip([self.path_match(headers_name) for headers_name in headers_names], headers_names))
 
         for header_path, header_name in headers.items():
             if header_path not in self.visit_headers:
-                if header_path in self.real_headers and header_path:
-                    self.include_headers(header_path, header_name)
-                elif os.path.basename(header_path) not in exclude_headers and header_path[-2:] != '.c':
-                    self.headers[header_path] = header_name
-        return self.headers
+                if header_path in self.real_headers:
+                    self.include_headers(header_path)
+        return list(set(self.fake_headers))
 
 
 def repo_parser(repo_dir, with_ext=True):

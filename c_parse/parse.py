@@ -53,10 +53,10 @@ def fake_code_handler(repo_dir, mains, real_headers, c_files):
 
 def fake_headers_handler(fake_headers_path, repo_headers, file_path):
     extractor = Extractor(real_headers=repo_headers)
-    headers = extractor.include_headers(path=file_path, name=os.path.basename(file_path))
+    headers = extractor.include_headers(path=file_path)
 
     headers_paths = []
-    for header_name in headers.values():
+    for header_name in headers:
         header_name = header_name[3:] if header_name[:2] == '..' else header_name
         path = os.path.join(fake_headers_path, header_name)
         headers_paths.append(path)

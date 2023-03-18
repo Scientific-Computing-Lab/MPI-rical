@@ -10,4 +10,5 @@ exclude_headers: [mpi.h,
                   sched.h,
                   glibc-sched.h,
                   stddef.h,
-                  limits.h]
+                  limits.h,
+                  assert.h]
