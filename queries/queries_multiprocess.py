@@ -1,15 +1,15 @@
 import os
 import time
+import shutil
 import multiprocessing as mp
 
 from multiprocessing import Pool
 from datetime import datetime
 
-from files_parser import write_to_json, repo_parser, find_init_final, remove_comments
 from programs import init_folder, copy_files
-from parsers import Extractor
 from funcs_extract_reg import functions_in_file
-from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, comment_in_ranges
+from files_handler import load_file, copy_file, files_walk, write_to_json
+from parsers import Extractor, remove_comments, repo_parser, find_init_final, count_lines, mpi_in_line, openmp_in_line, is_include, comment_in_ranges
 
 from config import PROGRAMS_MPI_DIR, REPOS_ORIGIN_DIR
 
@@ -57,7 +57,7 @@ def init_finalize_count_task(repo, queue):
         for fpath in files_walk(program_path):
             lines, name, ext = load_file(fpath, load_by_line=False)
             if ext == '.c':
-                lines, init_match, finalize_matches = find_init_final(lines, ext, rm_comments=True)
+                lines, init_match, finalize_matches = find_init_final(lines, rm_comments=True)
                 if init_match and finalize_matches and not comment_in_ranges(init_match, lines, ext):
                     counter.increment(1)
                     counter_value = counter.value
@@ -214,4 +214,46 @@ def program_division_multiprocess(origin_mpi_db, functions_db, n_cores=mp.cpu_co
 
     pool.close()
     pool.join()
+
+
+def is_ast(program_path, fnames):
+    ast_path = None
+    code_path = None
+    for fname in fnames:
+        prefix = fname.split('_')[0]
+        if prefix == 'ast':
+            ast_path = os.path.join(program_path, fname)
+        if prefix == 'proc':
+            code_path = os.path.join(program_path, fname)
+    return ast_path, code_path
+
+
+def create_ast_db(repo):
+    for program_id, program_path in repo['programs'].items():
+        program_path = f'{os.path.dirname(program_path)}/outputs/{program_id}'
+        ast_path, code_path = is_ast(program_path, os.listdir(program_path))
+        if ast_path:
+            dst_path = program_path[45:].split('/')
+            dst_path.remove('outputs')
+            dst_path = '_'.join(dst_path)
+            dst_program_path = os.path.join(cmpi_db, dst_path)
+            dst_ast_path = os.path.join(dst_program_path, 'ast.pkl')
+            dst_code_path = os.path.join(dst_program_path, 'code.c')
+
+            os.makedirs(os.path.dirname(dst_ast_path), exist_ok=True)
+            shutil.copy(src=ast_path, dst=dst_ast_path)
+            shutil.copy(src=code_path, dst=dst_code_path)
+            print(f'{counter.value}/50396 programs have been saved')
+            counter.increment(1)
+
+
+def create_ast_db_multiprocess(programs_db, n_cores=int(mp.cpu_count()-1)):
+    global counter
+    global cmpi_db
+    cmpi_db = '/home/nadavsc/LIGHTBITS/code2mpi/DB/c_mpi'
+    counter = Counter()
+    repos = list(programs_db.values())
+    print(f'Number of cores: {n_cores}')
+    with Pool(n_cores) as p:
+        p.map(create_ast_db, repos)
 

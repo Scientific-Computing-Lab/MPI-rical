@@ -1,7 +1,8 @@
 import os
-from make import PROGRAMS_MPI_DIR, REPOS_MPI_DIR, REPOS_ORIGIN_DIR, copy_file, repo_parser
-from parsers import Extractor
 
+from parsers import Extractor, repo_parser
+from files_handler import copy_file
+from config import PROGRAMS_MPI_DIR, REPOS_MPI_DIR, REPOS_ORIGIN_DIR
 from logger import info
 
 

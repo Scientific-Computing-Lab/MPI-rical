@@ -1,7 +1,8 @@
 import os
 import shutil
 
-from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, write_to_json, save_pkl, repo_parser, find_init_final, remove_comments
+from parsers import repo_parser, remove_comments, count_lines, mpi_in_line, openmp_in_line, is_include, find_init_final, comment_in_ranges
+from files_handler import load_file, files_walk, write_to_json, save_pkl
 from funcs_extract_reg import functions_in_header
 from datetime import datetime
 from parse import ast
@@ -35,7 +36,7 @@ def init_finalize_count(programs_db):
             for fpath in files_walk(program_path):
                 lines, name, ext = load_file(fpath, load_by_line=False)
                 if ext == '.c':
-                    lines, init_match, finalize_matches = find_init_final(lines, ext, rm_comments=True)
+                    lines, init_match, finalize_matches = find_init_final(lines, rm_comments=True)
                     if init_match and finalize_matches and not comment_in_ranges(init_match, lines, ext):  ##TODO: write a comment in ranges function
                         count += 1
                         num_lines = len(count_lines(lines))
