@@ -1,14 +1,12 @@
 import os
 import re
 import json
+import pdb
 import collections
 import matplotlib.pyplot as plt
 
-from repos_parser import REPOS_ORIGIN_DIR, PROGRAMS_MPI_DIR, REPOS_MPI_DIR, REPOS_MPI_SLICED_DIR
-from repos_parser import write_to_json, load_json, get_repos, repo_mpi_include
-from files_parser import EXTENSIONS, FORTRAN_EXTENSIONS, name_split, files_walk
-from c_parse import repo_parser
-
+from files_parser import name_split, files_walk, write_to_json, load_json, get_repos, repo_mpi_include, repo_parser
+from config import REPOS_ORIGIN_DIR, PROGRAMS_MPI_DIR, REPOS_MPI_DIR, EXTENSIONS, FORTRAN_EXTENSIONS
 
 from logger import set_logger, info
 
@@ -29,7 +27,7 @@ def db_origin_generate(mpi_only=False):
             for fpath in files_walk(repo_details['path']):
                 fname, ext = name_split(os.path.basename(fpath))
                 if ext in EXTENSIONS:
-                    repo_types[ext] = repo_types[ext] = (repo_types[ext] if ext in repo_types else 0) + 1
+                    repo_types[ext] = (repo_types[ext] if ext in repo_types else 0) + 1
             repos_count += 1
             info(f'{repos_count}) Repo {repo_details["name"]} has been added to database')
     write_to_json(database, 'database_origin.json')
@@ -37,13 +35,19 @@ def db_origin_generate(mpi_only=False):
 
 def db_programs_generate():
     database = {}
-    for id, user_name in enumerate(os.listdir(PROGRAMS_MPI_DIR)):
+    id = 0
+    for user_name in os.listdir(PROGRAMS_MPI_DIR):
         user_dir, origin_user_dir = os.path.join(PROGRAMS_MPI_DIR, user_name), os.path.join(REPOS_ORIGIN_DIR, user_name)
-        database.update(get_repos(origin_user_dir, id))
-        for repo_id, repo_details in get_repos(user_dir, id).items():
-            for program_id, program_path in enumerate(os.listdir(repo_details['path'])):
+        repos = get_repos(user_dir, id)
+        database.update(repos)
+        for repo_id, repo_details in repos.items():
+            programs_names = os.listdir(repo_details['path'])
+            if 'outputs' in programs_names:
+                programs_names.remove('outputs')
+            for program_id, program_path in enumerate(programs_names):
                 database[repo_id]['programs'][program_id] = os.path.join(repo_details['path'], program_path)
             info(f'{repo_id}) Repo {repo_details["name"]} programs have been added to database')
+        id += len(repos)
     write_to_json(database, 'database_programs.json')
 
 

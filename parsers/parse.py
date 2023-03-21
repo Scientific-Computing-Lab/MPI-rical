@@ -4,9 +4,8 @@ import sys
 
 project_path = r'/home/nadavsc/LIGHTBITS/code2mpi'
 sys.path.append(project_path)
-sys.path.append(os.path.join(project_path, 'repos_parser'))
+sys.path.append(os.path.join(project_path, 'make'))
 sys.path.append(os.path.join(project_path, 'files_parser'))
-sys.path.append(os.path.join(project_path, 'c_parse'))
 sys.path.append(os.path.join(project_path, 'parsers'))
 
 import pdb
@@ -14,10 +13,9 @@ import shutil
 from pycparser import parse_file
 from pathlib import Path
 
-from c_parse import replace_headers_ext, repo_parser, Extractor, remove_comments
-from func_visitors import FuncDefVisitor, FuncCallVisitor
-from files_parser import load_file
-from config import exclude_headers
+from parsers import Extractor
+from funcs_extract_ast import FuncDefVisitor, FuncCallVisitor
+from files_parser import repo_parser, remove_comments, load_file
 
 
 def func_export(ast):
@@ -83,16 +81,17 @@ def ast(code, main_name, main_path, origin_folder, real_headers, save_outputs_di
 
 
 if __name__ == "__main__":
-    origin_folder = r"/home/nadavsc/LIGHTBITS/code2mpi/c_parse/test/lemon"
-    file_path = r"/home/nadavsc/LIGHTBITS/code2mpi/c_parse/test/lemon/fake_code/lemon_benchmark.c"
+    origin_folder = r"/home/nadavsc/LIGHTBITS/code2mpi/parsers/test/lemon"
+    file_path = r"/test/lemon/fake_code/lemon_benchmark.c"
 
     fake_headers_path = os.path.join(origin_folder, 'fake_headers')
-    basic_fake_headers_path = r"/home/nadavsc/LIGHTBITS/code2mpi/c_parse/pycparser/utils/fake_libc_include"
+    basic_fake_headers_path = r"/pycparser/utils/fake_libc_include"
+    pdb.set_trace()
     mains, real_headers, c_files = repo_parser(repo_dir=origin_folder, with_ext=False)
 
     fake_code_handler(origin_folder, mains, real_headers, c_files)
     fake_headers_handler(fake_headers_path, real_headers, file_path)
-    pdb.set_trace()
+
     program_dirs = [f'-I{os.path.join(root, dir)}' for (root, dirs, fnames) in os.walk(origin_folder) for dir in dirs]
     cpp_args = ["-E"] + ["-D__attribute__(x)="] + [f'-I{origin_folder}'] + program_dirs + [f"-I{basic_fake_headers_path}"] + [f"-I{fake_headers_path}"]
     ast = parse_file(file_path, use_cpp=True, cpp_path='mpicc', cpp_args=cpp_args)

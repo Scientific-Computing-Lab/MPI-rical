@@ -1,16 +1,17 @@
 import os
-import pdb
 import time
 import multiprocessing as mp
 
 from multiprocessing import Pool
 from datetime import datetime
 
-from repos_parser import write_to_json, PROGRAMS_MPI_DIR, REPOS_ORIGIN_DIR
-from file_slice import find_init_final
-from program import init_folder, copy_files
-from c_parse import functions_in_header, functions_in_c, functions_in_file, repo_parser, Extractor, remove_comments
+from files_parser import write_to_json, repo_parser, find_init_final, remove_comments
+from programs import init_folder, copy_files
+from parsers import Extractor
+from funcs_extract_reg import functions_in_file
 from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, comment_in_ranges
+
+from config import PROGRAMS_MPI_DIR, REPOS_ORIGIN_DIR
 
 
 class Counter(object):

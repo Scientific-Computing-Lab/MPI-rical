@@ -1,15 +1,12 @@
 import os
 import shutil
-import pdb
 
-from repos_parser import write_to_json, save_pkl
-from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include
-from file_slice import find_init_final, comment_in_ranges
-from c_parse import functions_implementations, functions_in_header, function_starter, remove_comments, repo_parser
+from files_parser import load_file, files_walk, count_lines, mpi_in_line, openmp_in_line, is_include, write_to_json, save_pkl, repo_parser, find_init_final, remove_comments
+from funcs_extract_reg import functions_in_header
 from datetime import datetime
 from parse import ast
 
-from logger import set_logger, info
+from logger import info
 
 
 def openmp_mpi_count(db):
@@ -39,7 +36,7 @@ def init_finalize_count(programs_db):
                 lines, name, ext = load_file(fpath, load_by_line=False)
                 if ext == '.c':
                     lines, init_match, finalize_matches = find_init_final(lines, ext, rm_comments=True)
-                    if init_match and finalize_matches and not comment_in_ranges(init_match, lines, ext):
+                    if init_match and finalize_matches and not comment_in_ranges(init_match, lines, ext):  ##TODO: write a comment in ranges function
                         count += 1
                         num_lines = len(count_lines(lines))
                         init_finalize_lines = lines[init_match.span()[0] + 1:finalize_matches[-1].span()[1]]
@@ -78,7 +75,7 @@ def init_folders(save_repo_outputs_dir, idx):
 def ast_generator(programs_db):
     count_success = 0
     count_failure = 0
-    basic_fake_headers_path = r"/home/nadavsc/LIGHTBITS/code2mpi/c_parse/pycparser/utils/fake_libc_include"
+    basic_fake_headers_path = r"../parsers/pycparser/utils/fake_libc_include"
     cur_time = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
     logger_path = fr'/home/nadavsc/LIGHTBITS/code2mpi/logger/ast_logger_{cur_time}.txt'
     with open(logger_path, 'w') as f:
@@ -91,10 +88,16 @@ def ast_generator(programs_db):
         os.mkdir(save_repo_outputs_dir)
         for idx, program_path in repo['programs'].items():
             print(program_path)
+            fake_files = os.path.join(program_path, 'fake_files')
+            fake_headers = os.path.join(program_path, 'fake_headers')
+            if os.path.exists(fake_files):
+                shutil.rmtree(fake_files)
+            if os.path.exists(fake_headers):
+                shutil.rmtree(fake_headers)
             save_outputs_dir, fake_headers_path = init_folders(save_repo_outputs_dir, idx)
-            mains, real_headers, c_files = repo_parser(repo_dir=program_path, with_ext=True)
-            main_path, main_name = list(mains.keys())[0], list(mains.values())[0]
             try:
+                mains, real_headers, c_files = repo_parser(repo_dir=program_path, with_ext=True)
+                main_path, main_name = list(mains.keys())[0], list(mains.values())[0]
                 code, _, _ = load_file(main_path, load_by_line=False)
                 ast_file = ast(code=code,
                                main_name=main_name,
@@ -116,3 +119,5 @@ def ast_generator(programs_db):
 
 
 # 16/03/2023 22:13:55: ast success: 11,603 | ast failure: 3832 | fail ratio: 24.8%
+# 18/03/2023 16:59:38: ast success: 11,150 | ast failure: 4285 | fail ratio: 27.7%
+# 19/03/2023 04:48:33: ast success: 50,396 | ast failure: 23,462 | fail ratio:
