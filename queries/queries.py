@@ -76,7 +76,6 @@ def init_folders(save_repo_outputs_dir, idx):
 def ast_generator(programs_db):
     count_success = 0
     count_failure = 0
-    basic_fake_headers_path = r"../parsers/pycparser/utils/fake_libc_include"
     cur_time = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
     logger_path = fr'/home/nadavsc/LIGHTBITS/code2mpi/logger/ast_logger_{cur_time}.txt'
     with open(logger_path, 'w') as f:
@@ -97,18 +96,9 @@ def ast_generator(programs_db):
                 shutil.rmtree(fake_headers)
             save_outputs_dir, fake_headers_path = init_folders(save_repo_outputs_dir, idx)
             try:
-                mains, real_headers, c_files = repo_parser(repo_dir=program_path, with_ext=True)
-                main_path, main_name = list(mains.keys())[0], list(mains.values())[0]
-                code, _, _ = load_file(main_path, load_by_line=False)
-                ast_file = ast(code=code,
-                               main_name=main_name,
-                               main_path=main_path,
-                               origin_folder=program_path,
-                               real_headers=real_headers,
-                               save_outputs_dir=save_outputs_dir,
-                               fake_headers_path=fake_headers_path,
-                               basic_fake_headers_path=basic_fake_headers_path)
-                save_pkl(ast_file, os.path.join(save_outputs_dir, f'ast_{main_name[:-2]}'))
+                ast(origin_folder=program_path,
+                    fake_headers_path=fake_headers_path,
+                    save_dir=save_outputs_dir)
                 count_success += 1
             except:
                 cur_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -121,4 +111,4 @@ def ast_generator(programs_db):
 
 # 16/03/2023 22:13:55: ast success: 11,603 | ast failure: 3832 | fail ratio: 24.8%
 # 18/03/2023 16:59:38: ast success: 11,150 | ast failure: 4285 | fail ratio: 27.7%
-# 19/03/2023 04:48:33: ast success: 50,396 | ast failure: 23,462 | fail ratio:
+# 19/03/2023 04:48:33: ast success: 50,396 | ast failure: 23,462 | fail ratio: 31.7%

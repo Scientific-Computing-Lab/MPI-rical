@@ -19,6 +19,16 @@ def load_file(path, load_by_line=True):
     return code, name, ext
 
 
+def save_file(code, path):
+    with open(path, 'w') as f:
+        f.write(code)
+
+
+def load_pkl(path):
+    with open(path, 'rb') as f:
+        return pickle.load(f)
+
+
 def save_pkl(data, path):
     with open(f'{path}.pkl', 'wb') as f:
         pickle.dump(data, f)

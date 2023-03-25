@@ -14,9 +14,13 @@ exclude_headers: [mpi.h,
                   stddef.h,
                   limits.h,
                   assert.h]
+basic_fake_headers_path: "/home/nadavsc/LIGHTBITS/code2mpi/parsers/pycparser/utils/fake_libc_include"
+
 REPOS_ORIGIN_DIR: '/home/nadavsc/LIGHTBITS/data_gathering_script/git_repos'
 REPOS_MPI_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/repositories_MPI'
 REPOS_MPI_SLICED_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/repositories_MPI_SLICED'
 PROGRAMS_MPI_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/programs'
+C_MPI_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB'
+
 EXTENSIONS: ['.c', '.f', '.f77', '.f90', '.f95', '.f03', '.cc', '.cpp', '.cxx', '.h']
 FORTRAN_EXTENSIONS: ['.f', '.f77', '.f90', '.f95', '.f03']
