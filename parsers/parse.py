@@ -27,11 +27,15 @@ def func_export(ast):
     return funcs
 
 
+def re_code(ast_file, save_dir):
+    generator = c_generator.CGenerator()
+    with open(f'{save_dir}/re_code.c', 'w') as f:
+        f.write(generator.visit(list(ast_file)[-1]))
+
+
 def save(ast_file, code, re_gen, save_dir):
     if re_gen:
-        generator = c_generator.CGenerator()
-        with open(f'/{save_dir}/re_code.c', 'w') as f:
-            f.write(generator.visit(list(ast_file)[-1]))
+        re_code(ast_file, save_dir)
     save_file(code, os.path.join(save_dir, 'code.c'))
     save_pkl(ast_file, os.path.join(save_dir, 'ast'))
 

@@ -1,4 +1,4 @@
-from pycparser import c_ast
+from pycparser import c_ast, c_parser
 
 
 MPI_REMOVE_LIST = ['MPI_Init', 'MPI_Finalize', 'MPI_Comm_rank', 'MPI_Comm_free', 'MPI_Group_free',
@@ -43,6 +43,41 @@ def iter_fields(node):
             child = getattr(node, name)
             index += len(child)
             yield name, child
+
+
+class VirtualAST:
+    def __init__(self):
+        self.parser = c_parser.CParser()
+
+    def init_code(self):
+        self.code = r"""
+                int main(int argc,char** argv)
+                {
+                   int array[10];
+                   int collector=0;
+                """
+
+    def reduce(self, args):
+        self.init_code()
+        array_var, collector_var = args['UnaryOp'][0]['name'], args['UnaryOp'][1]['name']
+        array_type = args['Cast'][0]['name'].split('_')[-1]
+        op = args['Cast'][1]['name'].split('_')[-1]
+        if op == 'sum':
+            op = '+'
+
+        self.code = re.sub('int', array_type, self.code)
+        self.code = re.sub('array', array_var, self.code)
+        self.code = re.sub('collector', collector_var, self.code)
+        self.code += fr"""
+           for (int i=1; i<sizeof({array_var}); i++) {{
+              {collector_var} {op}= {array_var}[i];
+            }}
+        """
+        self.code += '}'
+        print(self.code)
+        ast = self.parser.parse(self.code, filename='<none>')
+        return ast.ext[0].body.block_items[2]
+
 
 # Puts in array all the ids found, function name(calls), array and structs
 class CounterIdVisitor(c_ast.NodeVisitor):
