@@ -64,3 +64,11 @@ class FuncDefVisitor(c_ast.NodeVisitor):
         if self.verbose > 0:
             print('%s at %s' % (node.decl.name, node.decl.coord))
         self.funcdefs[node.decl.name] = node
+
+
+def func_export(ast):
+    func_def = FuncDefVisitor(ast)
+    nodes = func_def.funcdefs
+    func_call = FuncCallVisitor(nodes)
+    funcs = func_call.func_calls
+    return funcs

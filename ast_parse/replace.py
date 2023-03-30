@@ -4,7 +4,7 @@ import os
 import sys
 from tqdm import tqdm
 
-sys.path.extend(['.', '..' ,'../parsers'])
+sys.path.extend(['.', '..' ,'../files_parse'])
 from pycparser import c_ast, c_generator
 from ast_parse import CounterIdVisitor
 from replace_vars import ReplaceIdsVisitor

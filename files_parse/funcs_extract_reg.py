@@ -1,7 +1,7 @@
 import os
 import re
 
-from parsers import space_remove
+from files_parse import space_remove
 
 '''
 A collection of functions for functions extraction with Regex. 

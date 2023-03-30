@@ -9,7 +9,7 @@ from datetime import datetime
 from programs import init_folder, copy_files
 from funcs_extract_reg import functions_in_file
 from files_handler import load_file, copy_file, files_walk, write_to_json
-from parsers import Extractor, remove_comments, repo_parser, find_init_final, count_lines, mpi_in_line, openmp_in_line, is_include, comment_in_ranges
+from files_parse import Extractor, remove_comments, repo_parser, find_init_final, count_lines, mpi_in_line, openmp_in_line, is_include, comment_in_ranges
 
 from config import PROGRAMS_MPI_DIR, REPOS_ORIGIN_DIR
 

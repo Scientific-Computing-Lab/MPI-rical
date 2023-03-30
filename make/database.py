@@ -1,12 +1,9 @@
 import os
-import re
-import json
-import pdb
 import collections
 import matplotlib.pyplot as plt
 
 from files_handler import files_walk, write_to_json, get_repos, load_json
-from parsers import repo_parser, repo_mpi_include, name_split
+from files_parse import repo_parser, repo_mpi_include, name_split
 from config import REPOS_ORIGIN_DIR, PROGRAMS_MPI_DIR, REPOS_MPI_DIR, EXTENSIONS, FORTRAN_EXTENSIONS
 from logger import set_logger, info
 

@@ -1,30 +1,20 @@
-from __future__ import print_function
 import os
 import sys
 
 project_path = r'/home/nadavsc/LIGHTBITS/code2mpi'
 sys.path.append(project_path)
+sys.path.append(os.path.join(project_path, 'ast_parse'))
 sys.path.append(os.path.join(project_path, 'make'))
-sys.path.append(os.path.join(project_path, 'files_parser'))
-sys.path.append(os.path.join(project_path, 'parsers'))
+sys.path.append(os.path.join(project_path, 'files_parse'))
+sys.path.append(os.path.join(project_path, 'queries'))
 
-import pdb
 import argparse
 from pycparser import parse_file, c_generator
 from pathlib import Path
 
-from parsers import Extractor, remove_comments, repo_parser
-from funcs_extract_ast import FuncDefVisitor, FuncCallVisitor
+from files_parse import Extractor, remove_comments, repo_parser
 from files_handler import save_pkl, load_file, save_file
 from config import basic_fake_headers_path
-
-
-def func_export(ast):
-    func_def = FuncDefVisitor(ast)
-    nodes = func_def.funcdefs
-    func_call = FuncCallVisitor(nodes)
-    funcs = func_call.func_calls
-    return funcs
 
 
 def re_code(ast_file, save_dir):
@@ -77,6 +67,7 @@ def ast(origin_folder, fake_headers_path, save_dir, re_gen=False):
     cpp_args = ["-E"] + ["-D__attribute__(x)="] + [f'-I{origin_folder}'] + program_dirs + [f"-I{basic_fake_headers_path}"] + [f"-I{fake_headers_path}"]
     ast_file = parse_file(main_path, use_cpp=True, cpp_path='mpicc', cpp_args=cpp_args)
     save(ast_file, code, re_gen, save_dir)
+    return ast_file
 
 
 if __name__ == "__main__":

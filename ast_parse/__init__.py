@@ -1,5 +1,5 @@
+import re
 from pycparser import c_ast, c_parser
-
 
 MPI_REMOVE_LIST = ['MPI_Init', 'MPI_Finalize', 'MPI_Comm_rank', 'MPI_Comm_free', 'MPI_Group_free',
                    'MPI_Comm_group', 'MPI_Group_incl', 'MPI_Comm_create', 'MPI_Comm_split']
@@ -77,6 +77,16 @@ class VirtualAST:
         print(self.code)
         ast = self.parser.parse(self.code, filename='<none>')
         return ast.ext[0].body.block_items[2]
+
+
+class MPIDetector(NodeTransformer):
+    def __init__(self):
+        self.is_mpi = False
+
+    def visit_FuncCall(self, node):
+        if 'MPI' in node.name.name:
+            self.is_mpi = True
+        return node
 
 
 # Puts in array all the ids found, function name(calls), array and structs

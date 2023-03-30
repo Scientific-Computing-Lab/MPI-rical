@@ -1,22 +1,20 @@
 import os
-import re
 import sys
-import pdb
 
 project_path = r'/home/nadavsc/LIGHTBITS/code2mpi'
 sys.path.append(project_path)
 sys.path.append(os.path.join(project_path, 'ast_parse'))
 sys.path.append(os.path.join(project_path, 'make'))
-sys.path.append(os.path.join(project_path, 'parsers'))
+sys.path.append(os.path.join(project_path, 'files_parse'))
 sys.path.append(os.path.join(project_path, 'queries'))
 
 from pycparser import c_ast
 from ast_parse import VirtualAST, NodeTransformer, MPI_REMOVE_LIST
-from parse import re_code
+from ast import re_code
 from files_handler import load_pkl
 
 
-class FuncCallsReplacer(NodeTransformer):
+class FuncCallsHandler(NodeTransformer):
     def __init__(self):
         self.vast = VirtualAST()
 
@@ -44,6 +42,6 @@ class FuncCallsReplacer(NodeTransformer):
 
 
 ast_file = load_pkl(path='test/ast.pkl')
-v = FuncCallsReplacer()
+v = FuncCallsHandler()
 v.visit(ast_file)
 re_code(ast_file, 'test')

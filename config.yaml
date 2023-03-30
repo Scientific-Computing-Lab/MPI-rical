@@ -14,7 +14,7 @@ exclude_headers: [mpi.h,
                   stddef.h,
                   limits.h,
                   assert.h]
-basic_fake_headers_path: "/home/nadavsc/LIGHTBITS/code2mpi/parsers/pycparser/utils/fake_libc_include"
+basic_fake_headers_path: "/home/nadavsc/LIGHTBITS/code2mpi/ast_parse/utils/fake_libc_include"
 
 REPOS_ORIGIN_DIR: '/home/nadavsc/LIGHTBITS/data_gathering_script/git_repos'
 REPOS_MPI_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/repositories_MPI'
