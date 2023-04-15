@@ -1,8 +1,16 @@
+import pdb
 import re
 from pycparser import c_ast, c_parser
 
 MPI_REMOVE_LIST = ['MPI_Init', 'MPI_Finalize', 'MPI_Comm_rank', 'MPI_Comm_free', 'MPI_Group_free',
                    'MPI_Comm_group', 'MPI_Group_incl', 'MPI_Comm_create', 'MPI_Comm_split']
+
+
+def main_node(ast_file):
+    for node in ast_file.ext:
+        if isinstance(node, c_ast.FuncDef):
+            if node.decl.name == 'main':
+                return node
 
 
 class NodeTransformer(c_ast.NodeVisitor):
@@ -47,46 +55,67 @@ def iter_fields(node):
 
 class VirtualAST:
     def __init__(self):
+        self.array_type_dict = ['int', 'double', 'float', 'long']
+        self.op_dict = {'sum': '+', 'prod': '*', 'max': '>', 'maxloc': '>', 'min': '<', 'minloc': '<'}
         self.parser = c_parser.CParser()
 
     def init_code(self):
-        self.code = r"""
+        self.main = r"""
                 int main(int argc,char** argv)
                 {
+                """
+        self.code = r"""
                    int array[10];
                    int collector=0;
+                   int maxvar = -99999;
+                   int minvar = 99999;
                 """
 
-    def reduce(self, args):
-        self.init_code()
-        array_var, collector_var = args['UnaryOp'][0]['name'], args['UnaryOp'][1]['name']
-        array_type = args['Cast'][0]['name'].split('_')[-1]
-        op = args['Cast'][1]['name'].split('_')[-1]
-        if op == 'sum':
-            op = '+'
-
+    def sum_loop(self, array_var, collector_var, array_type, op):
         self.code = re.sub('int', array_type, self.code)
         self.code = re.sub('array', array_var, self.code)
         self.code = re.sub('collector', collector_var, self.code)
-        self.code += fr"""
-           for (int i=1; i<sizeof({array_var}); i++) {{
-              {collector_var} {op}= {array_var}[i];
-            }}
-        """
-        self.code += '}'
-        print(self.code)
-        ast = self.parser.parse(self.code, filename='<none>')
-        return ast.ext[0].body.block_items[2]
+        self.main += self.code
+        self.main += fr"""
+                   for (int i=0; i<sizeof({array_var}); i++) {{
+                      {collector_var} {op}= {array_var}[i];
+                    }}
+                """
+        self.main += '}'
 
+    def maxmin_loop(self, array_var, collector_var, array_type, op):
+        self.code = re.sub('int', array_type, self.code)
+        self.code = re.sub('array', array_var, self.code)
+        maxmin_var = 'maxvar' if op == '>' else 'minvar'
+        self.code = re.sub(maxmin_var, collector_var, self.code)
+        self.main += self.code
+        self.main += fr"""
+                   for (int i=0; i<sizeof({array_var}); i++) {{
+                      if({array_var}[i] {op} {collector_var}) {{
+                        {collector_var} = {array_var}[i];
+                      }}
+                    }}
+                """
+        self.main += '}'
 
-class MPIDetector(NodeTransformer):
-    def __init__(self):
-        self.is_mpi = False
+    def reduce(self, args):
+        self.init_code()
+        array_var, collector_var = args[:2]
+        for arg in args[2:]:
+            end = arg.split('_')[-1].lower()
+            if len(end) > 1 and end != 'world':
+                if end in self.array_type_dict:
+                    array_type = end
+                    continue
+                if end in self.op_dict.keys():
+                    op = self.op_dict[end]
+                    continue
 
-    def visit_FuncCall(self, node):
-        if 'MPI' in node.name.name:
-            self.is_mpi = True
-        return node
+        func = self.maxmin_loop if op == '>' or op == '<' else self.sum_loop
+        func(array_var, collector_var, array_type, op)
+        print(self.main)
+        ast = self.parser.parse(self.main, filename='<none>')
+        return ast.ext[0].body.block_items[-1]
 
 
 # Puts in array all the ids found, function name(calls), array and structs

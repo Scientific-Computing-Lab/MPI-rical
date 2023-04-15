@@ -1,4 +1,5 @@
 from pycparser import c_ast
+import pdb
 
 
 class FuncCallVisitor(c_ast.NodeVisitor):
@@ -10,7 +11,7 @@ class FuncCallVisitor(c_ast.NodeVisitor):
         self.inner_visitor = FuncCallInnerVisitor(nodes)
         self.verbose = verbose
         self.func_calls = []
-        self.visit(self.funcdefs['main'])
+        self.visit(self.funcdefs['main']) if 'main' in self.funcdefs else self.visit(list(self.funcdefs.values())[0])
 
     def visit_FuncCall(self, node):
         name = node.name.name

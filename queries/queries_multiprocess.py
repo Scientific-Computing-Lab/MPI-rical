@@ -236,7 +236,7 @@ def create_ast_db(repo):
             dst_path = program_path[45:].split('/')
             dst_path.remove('outputs')
             dst_path = '_'.join(dst_path)
-            dst_program_path = os.path.join(cmpi_db, dst_path)
+            dst_program_path = os.path.join(mpi_db, dst_path)
             dst_ast_path = os.path.join(dst_program_path, 'ast.pkl')
             dst_code_path = os.path.join(dst_program_path, 'code.c')
 
@@ -249,8 +249,8 @@ def create_ast_db(repo):
 
 def create_ast_db_multiprocess(programs_db, n_cores=int(mp.cpu_count()-1)):
     global counter
-    global cmpi_db
-    cmpi_db = '/home/nadavsc/LIGHTBITS/code2mpi/DB/c_mpi'
+    global mpi_db
+    mpi_db = '/home/nadavsc/LIGHTBITS/code2mpi/DB/MPI'
     counter = Counter()
     repos = list(programs_db.values())
     print(f'Number of cores: {n_cores}')

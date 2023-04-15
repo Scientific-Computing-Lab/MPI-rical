@@ -1,6 +1,6 @@
 import os
 
-from parsers import Extractor, repo_parser
+from files_parse import Extractor, repo_parser
 from files_handler import copy_file
 from config import PROGRAMS_MPI_DIR, REPOS_MPI_DIR, REPOS_ORIGIN_DIR
 from logger import info

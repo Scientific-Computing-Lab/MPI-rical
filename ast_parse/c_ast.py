@@ -20,7 +20,7 @@ from config import basic_fake_headers_path
 def re_code(ast_file, save_dir):
     generator = c_generator.CGenerator()
     with open(f'{save_dir}/re_code.c', 'w') as f:
-        f.write(generator.visit(list(ast_file)[-1]))
+        f.write(generator.visit(ast_file.ext[-1]))
 
 
 def save(ast_file, code, re_gen, save_dir):
@@ -86,9 +86,9 @@ if __name__ == "__main__":
     if fake_headers_path == '' or save_dir == '':
         fake_headers_path = origin_folder
         save_dir = origin_folder
-    ast(origin_folder=origin_folder,
-        fake_headers_path=fake_headers_path,
-        save_dir=save_dir,
-        re_gen=re_gen)
+    c_ast(origin_folder=origin_folder,
+          fake_headers_path=fake_headers_path,
+          save_dir=save_dir,
+          re_gen=re_gen)
 
 # mpicc -E -D'__attribute__(x)=' -Itest/lemon/check -Ipycparser/utils/fake_libc_include test/lemon/check/lemon_benchmark.c  > lemon_benchmark_pp.c

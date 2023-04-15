@@ -10,11 +10,16 @@ sys.path.append(os.path.join(project_path, 'queries'))
 
 from make import ast_generator
 from files_handler import load_json
+from queries import MPI_to_serial, mpi_functions_finder
 from queries_multiprocess import create_ast_db_multiprocess
+from database import db_mpi_generate
 from logger import set_logger
 
 set_logger()
 
 if __name__ == "__main__":
-    programs_db = load_json(os.path.join('DB', 'database_programs.json'))
-    create_ast_db_multiprocess(programs_db=programs_db, n_cores=62)
+    mpi_db = load_json(os.path.join('DB', 'database_mpi.json'))
+    mpi_functions_finder(mpi_db)
+    # MPI_to_serial(mpi_db)
+    # programs_db = load_json(os.path.join('DB', 'database_programs.json'))
+    # create_ast_db_multiprocess(programs_db=programs_db, n_cores=62)

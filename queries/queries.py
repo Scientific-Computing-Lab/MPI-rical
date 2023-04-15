@@ -1,8 +1,18 @@
+import os
+import pdb
+import shutil
+
+from pycparser import c_generator, c_ast
+
 from files_parse import remove_comments, count_lines, mpi_in_line, openmp_in_line, is_include, find_init_final, comment_in_ranges
-from files_handler import load_file, files_walk, write_to_json
+from files_handler import save_pkl, load_file, load_pkl, files_walk, write_to_json
 from funcs_extract_reg import functions_in_header
+from funcs_extract_ast import func_export
+from if_handler import IfCallsHandler
+from funcs_handler import FuncCallsHandler
+from ast_parse import main_node
 
-
+from config import MPI_SERIAL_DIR
 from logger import info
 
 
@@ -58,3 +68,54 @@ def functions_finder(origin_db):
                     print(header_functions)
             repo_idx += 1
     write_to_json(database, 'header_funcs.json')
+
+
+def MPI_to_serial(mpi_db):
+    generator = c_generator.CGenerator()
+    count_fails = 0
+    count_success = 0
+    for program_name, paths in mpi_db.items():
+        print(program_name)
+        ast_file = load_pkl(path=paths['ast'])
+        ast_main = main_node(ast_file)
+        mpi_re_code = generator.visit(ast_main)
+
+        funcs_handler = FuncCallsHandler()
+        if_handler = IfCallsHandler()
+
+        try:
+            if_handler.visit(ast_main)
+            funcs_handler.visit(ast_main)
+            re_code = generator.visit(ast_main)
+        except:
+            count_fails += 1
+            info(f'success: {count_success} | failure: {count_fails} | fail ratio: {count_fails / (count_success + count_fails):2f}')
+            continue
+        save_dir = os.path.join(MPI_SERIAL_DIR, program_name)
+        ast_save_path = os.path.join(save_dir, 'ast')
+        os.mkdir(save_dir)
+
+        with open(f'{save_dir}/re_code.c', 'w') as f:
+            f.write(re_code)
+        with open(f'{save_dir}/mpi_re_code.c', 'w') as f:
+            f.write(mpi_re_code)
+        save_pkl(data=ast_main, path=ast_save_path)
+        count_success += 1
+        info(f'success: {count_success} | failure: {count_fails} | fail ratio: {count_fails/(count_success + count_fails):2f}')
+
+
+def mpi_functions_finder(mpi_db):
+    database = {}
+    fails = 0
+    for idx, (program_name, paths) in enumerate(mpi_db.items()):
+        ast = load_pkl(paths['ast'])
+        try:
+            functions = list(set(func_export(ast)))
+        except:
+            fails += 1
+            continue
+        for func_name in functions:
+            if 'MPI' in func_name:
+                database[func_name] = (database[func_name] if func_name in database else 0) + 1
+        print(f'Success: {idx+1-fails} | Fails: {fails} | Ratio: {fails/(idx+1)}')
+    write_to_json(database, 'mpi_funcs_per_file.json')
