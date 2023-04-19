@@ -50,6 +50,17 @@ class FuncCallsHandler(NodeTransformer):
         return node
 
 
+class FuncCallsPlaceHolder(NodeTransformer):
+    def __init__(self):
+        self.virtual_ast = VirtualAST()
+
+    def visit_FuncCall(self, node):
+        name = node.name.name
+        if 'MPI' in name:
+            return self.virtual_ast.place_holder()
+        return node
+
+
 # ast_file = load_pkl(path='/home/nadavsc/LIGHTBITS/code2mpi/DB/MPI/Terminus-IMRC_mpi-ping-pong-bench_0/ast.pkl')
 # # ast_file = load_pkl(path='/home/nadavsc/LIGHTBITS/code2mpi/ast_parse/test/ast.pkl')
 # # ast_file = load_pkl(path='/home/nadavsc/LIGHTBITS/code2mpi/DB/MPI/brlindblom_gepetools_0/ast.pkl')

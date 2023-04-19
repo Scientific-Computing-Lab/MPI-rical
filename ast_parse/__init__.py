@@ -5,6 +5,30 @@ from pycparser import c_ast, c_parser
 MPI_REMOVE_LIST = ['MPI_Init', 'MPI_Finalize', 'MPI_Comm_rank', 'MPI_Comm_free', 'MPI_Group_free',
                    'MPI_Comm_group', 'MPI_Group_incl', 'MPI_Comm_create', 'MPI_Comm_split']
 
+C_GENERATOR_DICT = {'MPI_COMM_WORLD': '\(MPI_Comm\) \(\(void \*\) \(\&ompi_mpi_comm_world\)\)',
+                    'MPI_INT': '\(MPI_Datatype\) \(\(void \*\) \(\&ompi_mpi_int\)\)',
+                    'MPI_DOUBLE': '\(MPI_Datatype\) \(\(void \*\) \(\&ompi_mpi_double\)\)',
+                    'MPI_CHAR': '\(MPI_Datatype\) \(\(void \*\) \(\&ompi_mpi_char\)\)',
+                    'MPI_BYTE': '\(MPI_Datatype\) \(\(void \*\) \(\&ompi_mpi_byte\)\)',
+                    'MPI_MAX': '\(MPI_Op\) \(\(void \*\) \(\&ompi_mpi_op_max\)\)',
+                    'MPI_MIN': '\(MPI_Op\) \(\(void \*\) \(\&ompi_mpi_op_min\)\)',
+                    'MPI_SUM': '\(MPI_Op\) \(\(void \*\) \(\&ompi_mpi_op_sum\)\)',
+                    'MPI_COMM_NULL': '\(MPI_Comm\) \(\(void \*\) \(\&ompi_mpi_comm_null\)\)',
+                    'MPI_INFO_NULL': '\(MPI_Info\) \(\(void \*\) \(\&ompi_mpi_info_null\)\)',
+                    'MPI_SHORT': '\(MPI_Datatype\) \(\(void \*\) \(\&ompi_mpi_short\)\)',
+                    'MPI_BAND': '\(MPI_Op\) \(\(void \*\) \(\&ompi_mpi_op_band\)\)',
+                    'MPI_FLOAT': '\(MPI_Datatype\) \(\(void \*\) \(\&ompi_mpi_float\)\)',
+                    'MPI_LONG': '\(MPI_Datatype\) \(\(void \*\) \(\&ompi_mpi_unsigned_long\)\)',
+                    'MPI_LONG_LONG_INT': '\(MPI_Datatype\) \(\(void \*\) \(\&ompi_mpi_long_long_int\)\)',
+                    'MPI_ERRORS_RETURN': '\(MPI_Errhandler\) \(\(void \*\) \(\&ompi_mpi_errors_return\)\)',
+                    'MPI_STATUS_IGNORE': '\(MPI_Status \*\) 0'}
+
+
+def origin_funcs(mpi_re_code):
+    for func, pattern in C_GENERATOR_DICT.items():
+        mpi_re_code = re.sub(pattern, func, mpi_re_code)
+    return mpi_re_code
+
 
 def main_node(ast_file):
     for node in ast_file.ext:
@@ -114,6 +138,15 @@ class VirtualAST:
         func = self.maxmin_loop if op == '>' or op == '<' else self.sum_loop
         func(array_var, collector_var, array_type, op)
         print(self.main)
+        ast = self.parser.parse(self.main, filename='<none>')
+        return ast.ext[0].body.block_items[-1]
+
+    def place_holder(self):
+        self.init_code()
+        self.main += fr"""
+                   printf("___PLACEHOLDER___");
+                """
+        self.main += '}'
         ast = self.parser.parse(self.main, filename='<none>')
         return ast.ext[0].body.block_items[-1]
 

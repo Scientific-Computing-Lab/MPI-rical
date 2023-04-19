@@ -13,6 +13,8 @@ with open('/home/nadavsc/LIGHTBITS/code2mpi/config.yaml') as file:
     DB_DIR = config['DB_DIR']
     MPI_DIR = config['MPI_DIR']
     MPI_SERIAL_DIR = config['MPI_SERIAL_DIR']
+    MPI_SERIAL_REPLACED_DIR = config['MPI_SERIAL_REPLACED_DIR']
+    MPI_SERIAL_SNIPPET_DIR = config['MPI_SERIAL_SNIPPET_DIR']
 
     EXTENSIONS = config['EXTENSIONS']
     FORTRAN_EXTENSIONS = config['FORTRAN_EXTENSIONS']
