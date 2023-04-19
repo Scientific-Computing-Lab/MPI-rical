@@ -18,7 +18,8 @@ scoring_funcs = ['mpi _init',
                  'mp i_ win _create',
                  'mp i_ all reduce',
                  'mp i_ wait',
-                 'mp i_ i recv']
+                 'mp i_ i recv',
+                 'mp i_ isend']
 
 
 def remove_mpi_funcs(code, matches):
@@ -44,17 +45,23 @@ def calc_tp_fp(ref_matches, cand_matches):
     fn = {}
     p = 0
     for func, ref_match in ref_matches.items():
+        matches = 0
         ref_match_starts = [match.span()[0] for match in ref_match]
         for ref_match_start in ref_match_starts:
             p += 1
             if func in cand_matches:
                 for cand_match in cand_matches[func]:
                     if abs(cand_match.span()[0]-ref_match_start) < 100:
+                        matches += 1
                         tp[func] = (tp[func] if func in tp else 0) + 1
-                    else:
-                        fp[func] = (fp[func] if func in fp else 0) + 1
             else:
                 fn[func] = (fn[func] if func in fn else 0) + 1
+        if func in cand_matches:
+            if len(ref_match_starts) < len(cand_matches[func]):
+                fp[func] = (fp[func] if func in fp else 0) + len(cand_matches[func]) - matches
+            elif len(ref_match_starts) != len(cand_matches[func]):
+                fn[func] = (fn[func] if func in fn else 0) + len(ref_match_starts) - matches
+
     for func, cand_match in cand_matches.items():
         for match in cand_match:
             if func not in ref_matches:
@@ -107,5 +114,37 @@ print(f'Reference: {reference}')
 print(f'Candidate: {candidate}')
 conf_matrix(reference, candidate)
 
-
+# def matcher(code):
+#     funcs = {}
+#     count = {}
+#     for pattern in scoring_funcs:
+#         orig_matches = list(re.finditer(pattern, code))
+#         matches = {}
+#         for idx, match in enumerate(orig_matches):
+#             matches[idx] = {'match': match, 'exists': 0}
+#         if matches:
+#             count[pattern] = (count[pattern] if pattern in count else 0) + len(matches)
+#             funcs[pattern] = matches
+#     return funcs, count
+#
+#
+# def calc_tp_fp(all_ref_matches, all_cand_matches):
+#     tp = {}
+#     fp = {}
+#     fn = {}
+#     p = 0
+#     for func, ref_matches in all_ref_matches.items():
+#         for ref_match in ref_matches.values():
+#             p += 1
+#             if func in all_cand_matches:
+#                 for cand_match in all_cand_matches[func].values():
+#                     if abs(cand_match['match'].span()[0]-ref_match['match'].span()[0]) < 100:
+#                         ref_match['exists'] = 1
+#                         tp[func] = (tp[func] if func in tp else 0) + 1
+#             else:
+#                 fn[func] = (fn[func] if func in fn else 0) + 1
+#
+#         for is_exists in ref_match_starts.values():
+#             if is_exists == 0:
+#                 fp[func] = (fp[func] if func in fp else 0) + 1
 
