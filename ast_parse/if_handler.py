@@ -36,19 +36,32 @@ class RankDetector(NodeTransformer):
 
 class IfCallsHandler(NodeTransformer):
     def if_ext(self, node):
+        # print('START')
+        # pdb.set_trace()
         try:
             iftrue = node.iftrue
-            self.if_content += iftrue.block_items
-        except:
             try:
-                self.if_content += node.block_items
+                self.if_content += iftrue.block_items
             except:
-                pass
-            return
-
-        iffalse = node.iffalse
-        if iffalse is not None:
-            self.if_ext(iffalse)
+                # print('First Exception')
+                # pdb.set_trace()
+                try:
+                    self.if_content += node.block_items
+                except:
+                    # print('Second Exception')
+                    # pdb.set_trace()
+                    self.if_content += [iftrue]
+        except:
+            pass
+        try:
+            iffalse = node.iffalse
+            if iffalse is not None:
+                self.if_ext(iffalse)
+        except:
+            # print('END')
+            # pdb.set_trace()
+            self.if_content += [node]
+        return
 
     def visit_If(self, node):
         mpi_detector = MPIDetector()
@@ -60,6 +73,7 @@ class IfCallsHandler(NodeTransformer):
         if rank_detector.is_rank or mpi_detector.is_mpi:
             self.if_content = []
             self.if_ext(node)
+            # pdb.set_trace()
             return self.if_content
         return node
 

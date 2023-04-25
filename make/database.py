@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from files_handler import files_walk, write_to_json, get_repos, load_json
 from files_parse import repo_parser, repo_mpi_include, name_split
-from config import REPOS_ORIGIN_DIR, PROGRAMS_MPI_DIR, REPOS_MPI_DIR, MPI_DIR, MPI_SERIAL_DIR, MPI_SERIAL_REPLACED_DIR, EXTENSIONS, FORTRAN_EXTENSIONS
+from config import REPOS_ORIGIN_DIR, PROGRAMS_MPI_DIR, REPOS_MPI_DIR, MPI_DIR, MPI_SERIAL_HEURISTICS_DIR, MPI_SERIAL_PLACEHOLDER_DIR, EXTENSIONS, FORTRAN_EXTENSIONS
 from logger import set_logger, info
 
 set_logger()
@@ -61,14 +61,14 @@ def db_mpi_generate():
 
 def db_mpi_serial_generate():
     database = {}
-    for idx, program_name in enumerate(os.listdir(MPI_SERIAL_REPLACED_DIR)):
-        program_dir = os.path.join(MPI_SERIAL_REPLACED_DIR, program_name)
+    for idx, program_name in enumerate(os.listdir(MPI_SERIAL_PLACEHOLDER_DIR)):
+        program_dir = os.path.join(MPI_SERIAL_PLACEHOLDER_DIR, program_name)
         ast_path = os.path.join(program_dir, 'ast.pkl')
         code_path = os.path.join(program_dir, 're_code.c')
         mpi_code_path = os.path.join(program_dir, 'mpi_re_code.c')
         database.update({program_name: {'ast': ast_path, 'code': code_path, 'mpi_code': mpi_code_path}})
         info(f'{idx}) programs have been added to database')
-    write_to_json(database, '/home/nadavsc/LIGHTBITS/code2mpi/DB/database_mpi_serial_replaced.json')
+    write_to_json(database, '/home/nadavsc/LIGHTBITS/code2mpi/DB/database_mpi_serial_placeholder.json')
 
 
 def functions_chain_counter(db):
@@ -101,13 +101,48 @@ def total_functions(db):
 
 def draw_functions_hist(db):
     keys, values = sort_total_functions(db)  # if functions by reg: total_functions(db)
-    fig, ax = plt.subplots(1, 1)
-    ax.set_title('Functions Distribution')
-    ax.bar(keys[:30], values[:30])
-    plt.setp(ax.get_xticklabels(), rotation=25, horizontalalignment='right')
-    plt.show()
+    plt.figure(figsize=(14, 7))  # Make it 14x7 inch
+    plt.style.use('seaborn-whitegrid')  # nice and clean grid
+    plt.bar(keys[:10], values[:10], facecolor='#2ab0ff', edgecolor='#169acf', linewidth=0.5)
+    _, labels = plt.xticks()
+    plt.setp(labels, rotation=20, horizontalalignment='right')
+    plt.grid(False)
+    plt.title('Functions Distribution')
+    plt.ylabel('Frequency')
+    plt.savefig('/home/nadavsc/Desktop/functions.png', dpi=200)
+    # fig, ax = plt.subplots(1, 1)
+    # ax.set_title('Functions Distribution')
+    # ax.bar(keys[:30], values[:30])
+    # plt.setp(ax.get_xticklabels(), rotation=25, horizontalalignment='right')
+    # plt.show()
 
-db_mpi_serial_generate()
+    # ratios = []
+    # with open('/home/nadavsc/LIGHTBITS/code2mpi/stats/init_finalize.txt', 'r') as f:
+    #     stats = f.readlines()
+    # for line in stats:
+    #     try:
+    #         ratios.append(float(line[-5:]))
+    #     except:
+    #         print('string')
+    #
+    # plt.figure(figsize=(14, 7))  # Make it 14x7 inch
+    # plt.style.use('seaborn-whitegrid')  # nice and clean grid
+    # plt.hist(ratios, facecolor='#2ab0ff', edgecolor='#169acf', linewidth=0.5)
+    # plt.grid(False)
+    # plt.title('Init-Finalize Lines Ratio')
+    # plt.ylabel('Frequency')
+    # plt.xlabel('Init-Finalize to All Lines Ratio')
+    # plt.savefig('/home/nadavsc/Desktop/ratio.png', dpi=200)
+
+
+def line_count_stats(mpi_lines_count_db):
+    count = 0
+    for program_name, value in mpi_lines_count_db.items():
+        if value['lines'] >= 51 and value['lines'] <= 99:
+            count += 1
+    print(count)
+
+# db_mpi_serial_generate()
 
 # db = load_json(os.path.join('/home/nadavsc/LIGHTBITS/code2mpi/stats', 'mpi_funcs_per_file.json'))
 # draw_functions_hist(db)

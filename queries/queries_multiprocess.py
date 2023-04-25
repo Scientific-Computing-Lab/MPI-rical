@@ -17,7 +17,7 @@ from funcs_extract_reg import functions_in_file
 from files_handler import save_pkl, load_pkl, load_file, copy_file, files_walk, write_to_json
 from files_parse import Extractor, remove_comments, repo_parser, find_init_final, count_lines, mpi_in_line, openmp_in_line, is_include, comment_in_ranges
 
-from config import PROGRAMS_MPI_DIR, REPOS_ORIGIN_DIR, MPI_SERIAL_REPLACED_DIR
+from config import PROGRAMS_MPI_DIR, REPOS_ORIGIN_DIR, MPI_SERIAL_PLACEHOLDER_DIR, MPI_SERIAL_HEURISTICS_DIR
 
 
 class Counter(object):
@@ -266,10 +266,7 @@ def create_ast_db_multiprocess(programs_db, n_cores=int(mp.cpu_count()-1)):
 
 def MPI_to_serial(program, mode='place_holder'):
     generator = c_generator.CGenerator()
-    count_fails = 0
-    count_success = 0
     program_name, paths = program
-    print(program_name)
     ast_file = load_pkl(path=paths['ast'])
     ast_main = main_node(ast_file)
     mpi_re_code = origin_funcs(generator.visit(ast_main))
@@ -285,11 +282,13 @@ def MPI_to_serial(program, mode='place_holder'):
         funcs_handler.visit(ast_main)
         re_code = origin_funcs(generator.visit(ast_main))
     except:
-        count_fails += 1
-        print(f'success: {count_success} | failure: {count_fails} | fail ratio: {count_fails / (count_success + count_fails):2f}')
+        fail_counter.increment(1)
+        cur_success = sucess_counter.value
+        cur_fails = fail_counter.value
+        print(f'success: {cur_success} | failure: {cur_fails} | fail ratio: {cur_fails / (cur_success + cur_fails):2f}')
         return
 
-    save_dir = os.path.join(MPI_SERIAL_REPLACED_DIR, program_name)
+    save_dir = os.path.join(MPI_SERIAL_PLACEHOLDER_DIR, program_name)
     ast_save_path = os.path.join(save_dir, 'ast')
     os.mkdir(save_dir)
 
@@ -298,13 +297,17 @@ def MPI_to_serial(program, mode='place_holder'):
     with open(f'{save_dir}/mpi_re_code.c', 'w') as f:
         f.write(mpi_re_code)
     save_pkl(data=ast_main, path=ast_save_path)
-    count_success += 1
-    print(f'success: {count_success} | failure: {count_fails} | fail ratio: {count_fails/(count_success + count_fails):2f}')
+    sucess_counter.increment(1)
+    cur_success = sucess_counter.value
+    cur_fails = fail_counter.value
+    print(f'success: {cur_success} | failure: {cur_fails} | fail ratio: {cur_fails/(cur_success + cur_fails):2f}')
 
 
 def MPI_to_serial_multiprocess(mpi_db, n_cores=int(mp.cpu_count()-1)):
-    global counter
-    counter = Counter()
+    global sucess_counter
+    global fail_counter
+    sucess_counter = Counter()
+    fail_counter = Counter()
     programs = [(program_name, paths) for program_name, paths in mpi_db.items()]
     print(f'Number of cores: {n_cores}')
     with Pool(n_cores) as p:

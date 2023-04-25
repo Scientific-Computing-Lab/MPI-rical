@@ -10,7 +10,7 @@ sys.path.append(os.path.join(project_path, 'files_parse'))
 sys.path.append(os.path.join(project_path, 'queries'))
 
 from pycparser import c_ast
-from ast_parse import VirtualAST, NodeTransformer, MPI_REMOVE_LIST
+from ast_parse import VirtualAST, NodeTransformer
 from c_ast import re_code
 from files_handler import load_pkl
 
@@ -43,7 +43,7 @@ class FuncCallsHandler(NodeTransformer):
                 args = self.get_args(node)
                 node = self.virtual_ast.reduce(args)
             except:
-                print(f'{name} has failed')
+                # print(f'{name} has failed')
                 return None
         elif 'MPI' in name:
             return None

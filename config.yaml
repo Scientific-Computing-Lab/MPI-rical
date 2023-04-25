@@ -23,8 +23,8 @@ PROGRAMS_MPI_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/programs'
 DB_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB'
 MPI_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/MPI'
 MPI_SERIAL_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/MPI_SERIAL'
-MPI_SERIAL_REPLACED_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/MPI_SERIAL_REPLACED_V2'
-MPI_SERIAL_SNIPPET_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/MPI_SERIAL_SNIPPET'
+MPI_SERIAL_HEURISTICS_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/MPI_SERIAL_HEURISTICS'
+MPI_SERIAL_PLACEHOLDER_DIR: '/home/nadavsc/LIGHTBITS/code2mpi/DB/MPI_SERIAL_PLACEHOLDER'
 
 EXTENSIONS: ['.c', '.f', '.f77', '.f90', '.f95', '.f03', '.cc', '.cpp', '.cxx', '.h']
 FORTRAN_EXTENSIONS: ['.f', '.f77', '.f90', '.f95', '.f03']
