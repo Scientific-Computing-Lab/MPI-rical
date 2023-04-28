@@ -46,8 +46,8 @@ def F1_calc(results_path):
 
 
 if __name__ == "__main__":
-    # results_path = '/home/nadavsc/LIGHTBITS/SPT-Code/outputs/5_epochs_320_close_placeholder_translation/translation_test_results.txt'
-    results_path = '/home/nadavsc/LIGHTBITS/SPT-Code/outputs/5_epochs_320_close_placeholder_completion/completion_test_results.txt'
+    results_path = '/home/nadavsc/LIGHTBITS/SPT-Code/outputs/5_epochs_320_close_placeholder_translation/translation_test_results.txt'
+    # results_path = '/home/nadavsc/LIGHTBITS/SPT-Code/outputs/5_epochs_320_close_placeholder_completion/completion_test_results.txt'
     F1_calc(results_path)
     # db_serial_mpi_generate()
     # mpi_db = load_json(os.path.join('DB', 'database_mpi.json'))

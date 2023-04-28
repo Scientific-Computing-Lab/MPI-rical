@@ -1,26 +1,5 @@
 import re
 
-from files_handler import load_pkl, load_file
-
-scoring_funcs = ['mpi _init',
-                 'mp i_ finalize',
-                 'mp i_ comm_ size',
-                 'mp i_ comm_ rank',
-                 'mp i_ recv',
-                 'mp i_ send'
-                 'mp i_ abort',
-                 'mpi _bar rier',
-                 'mpi _type_ commit',
-                 'mpi _b cast',
-                 'mp i_ comm_ free',
-                 'mp i_ w time',
-                 'mpi _reduce',
-                 'mp i_ win _create',
-                 'mp i_ all reduce',
-                 'mp i_ wait',
-                 'mp i_ i recv',
-                 'mp i_ isend']
-
 
 def prefix_function(func):
     return re.search(r'mp[\s]?i[^;(]*', func).group().strip()
@@ -32,15 +11,17 @@ def remove_mpi_funcs(code, matches):
     return code
 
 
-def matcher(code):
+def matcher(functions):
+    pre_functions = [prefix_function(func.group()) for func in functions]
     funcs = {}
-    count = {}
-    for pattern in scoring_funcs:
-        ref_matches = list(re.finditer(pattern, code))
-        if ref_matches:
-            count[pattern] = (count[pattern] if pattern in count else 0) + len(ref_matches)
-            funcs[pattern] = ref_matches
-    return funcs, count
+    for pre_func in pre_functions:
+        matches = []
+        if pre_func not in funcs:
+            for idx, pre_func_inner in enumerate(pre_functions):
+                if pre_func == pre_func_inner:
+                    matches.append(functions[idx])
+            funcs[pre_func] = matches
+    return funcs
 
 
 def calc_tp_fp(ref_matches, cand_matches):
@@ -102,26 +83,15 @@ def metrics_calc(tp, tn, fn, fp):
 
 
 def conf_matrix(reference, candidate, metrics=False):
-    # ref_functions = list(re.finditer(r'mp[\s]?i[^;]*[(](.*?)[)][\s]?;', reference))
-    # cand_functions = list(re.finditer(r'mp[\s]?i[^;]*[(](.*?)[)][\s]?;', candidate))
-    # ref_pre_functions = [prefix_function(ref_func.group()) for ref_func in ref_functions]
-    # cand_pre_functions = [prefix_function(cand_func.group()) for cand_func in cand_functions]
-    ref_matches, ref_counts = matcher(reference)
-    cand_matches, cand_counts = matcher(candidate)
+    ref_functions = list(re.finditer(r'mp[\s]?i[^;)=]*[(][^);]*[)][\s]?;', reference))
+    cand_functions = list(re.finditer(r'mp[\s]?i[^;)=]*[(][^);]*[)][\s]?;', candidate))
+    ref_matches = matcher(ref_functions)
+    cand_matches = matcher(cand_functions)
     tp, fp, fn, p = calc_tp_fp(ref_matches, cand_matches)
     tn, fn, n = calc_tn_fn(fn, reference, candidate, ref_matches, cand_matches)
     if metrics:
         tpr, tnr, fnr, fpr, precision, recall, f1 = metrics_calc(tp=tp, tn=tn, fn=fn, fp=fp)
     return tp, fp, tn, fn, p, n
-
-
-# # reference = 'int main ( int argc , char * * argv ) { int nprocs ; int rank ; mpi _init ( & argc , & argv ) ; mp i_ comm_ size ( mp i_ comm_ world , & nprocs ) ; mp i_ comm_ rank ( mp i_ comm_ world , & rank ) ; printf ( ___str , nprocs , rank ) ; int * array = malloc ( 1000 * ( sizeof ( int ) ) ) ; int i ; int j ; int j max = 50 ; for ( j = 0 ; j < j max ; j ++ ) { int tag = j + 1 ; for ( i = 0 ; i < 1000 ; i ++ ) { array [ i ] = ( rank * i ) + j ; } if ( ( rank == 0 ) & & ( nprocs > 1 ) ) { for ( i = 1 ; i < nprocs ; i ++ ) { mpi _request req ; mp i_ i recv ( array , 1000 , mp i_ int , i , tag , mp i_ comm_ world , & req ) ; float junk = do work ( ) ; if ( junk == 0 . 00 ) printf ( ___str ) ; mp i_ wait ( & req , mp i_ status_ ignore ) ; } } else { mpi _request req ; mp i_ isend ( array , 1000 , mp i_'
-# # candidate = 'int main ( int argc , char * * argv ) { int nprocs ; int rank ; mpi _init ( & argc , & argv ) ; mp i_ comm_ size ( mp i_ comm_ world , & nprocs ) ; mp i_ comm_ rank ( mp i_ comm_ world , & rank ) ; printf ( ___str , nprocs , rank ) ; int * array = malloc ( 1000 * ( sizeof ( int ) ) ) ; int i ; int j ; int j max = 50 ; for ( j = 0 ; j < j max ; j ++ ) { int tag = j + 1 ; for ( i = 0 ; i < 1000 ; i ++ ) { array [ i ] = ( rank * i ) + j ; } if ( ( rank == 0 ) & & ( nprocs > 1 ) ) { for ( i = 1 ; i < nprocs ; i ++ ) { mpi _request req ; mp i_ i recv ( array , 1000 , mp i_ int , i , tag , mp i_ comm_ world , & req ) ; mp i_ wait ( & req , mp i_ status_ ignore ) ; float junk = do work ( ) ; if ( junk == 0 . 00 ) printf ( ___str ) ; } } else { mpi _request req ; mp i_ i recv ( array , 1000 ,'
-# reference = 'int main ( int argc , char * * argv ) { mpi _init ( & argc , & argv ) ; int rank ; int com size ; mp i_ comm_ size ( mp i_ comm_ world , & com size ) ; mp i_ comm_ rank ( mp i_ comm_ world , & rank ) ; long long int local arraysize = ( ( ( long long int ) 1 ) < < 30 ) / com size ; long long int * local array = ( long long int * ) malloc ( local arraysize * ( sizeof ( long long int ) ) ) ; for ( long long int i = 0 ; i < local arraysize ; i ++ ) local array [ i ] = ( ( ( long long int ) rank ) * local arraysize ) + i ; long long int result ; uint64 _t starttime = clock _now ( ) ; mpi _p2 p_ reduce ( local array , & result , local arraysize , ( mp i_ datatype ) ( ( void * ) ( & o mp i_ mp i_ long_ long _int ) ) , mpi _sum , 0 , mp i_ comm_ world ) ; uint64 _t endtime = clock _now ( ) ; double time _in_ secs = ( ( double ) ( endtime - starttime ) ) / 512 000000 ; if ( rank == 0 ) printf ( ___str , result , time _in_ secs ) ; starttime = clock _now ( ) ; long long int local sum = 0 ; for ( long long int i = 0 ; i < local arraysize ; i ++ ) local sum += local array [ i ] ; mpi _reduce ( & local sum , & result , 1 , ( mp i_ datatype ) ( ( void * ) ('
-# candidate = 'int main ( int argc , char * * argv ) { int rank ; int com size ; mpi _init ( & argc , & argv ) ; mp i_ comm_ rank ( mp i_ comm_ world , & rank ) ; mp i_ comm_ size ( mp i_ comm_ world , & com size ) ; mp i_ comm_ size ( mp i_ comm_ world , & com size ) ; long long int local arraysize = ( ( ( long long int ) 1 ) < < 30 ) / com size ; long long int * local array = ( long long int * ) malloc ( local arraysize * ( sizeof ( long long int ) ) ) ; for ( long long int i = 0 ; i < local arraysize ; i ++ ) local array [ i ] = ( ( ( long long int ) rank ) * local arraysize ) + i ; long long int result ; uint64 _t starttime = clock _now ( ) ; uint64 _t endtime = clock _now ( ) ; double time _in_ secs = ( ( double ) ( endtime - starttime ) ) / 512 000000 ; if ( rank == 0 ) printf ( ___str , result , time _in_ secs ) ; starttime = clock _now ( ) ; long long int local sum = 0 ; for ( long long int i = 0 ; i < local arraysize ; i ++ ) local sum += local array [ i ] ; endtime = clock _now ( ) ; time _in_ secs = ( ( double ) ( endtime - starttime ) ) / 512 000000 ; if ( rank == 0 ) printf ( ___str , result , time _in_ secs ) ; free ( local array ) ; mp i_ finalize ( ) ; return 0 ; }'
-# print(f'Reference: {reference}')
-# print(f'Candidate: {candidate}')
-# conf_matrix(reference, candidate)
 
 
 if __name__ == "__main__":
