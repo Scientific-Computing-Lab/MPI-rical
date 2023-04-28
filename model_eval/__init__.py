@@ -22,6 +22,10 @@ scoring_funcs = ['mpi _init',
                  'mp i_ isend']
 
 
+def prefix_function(func):
+    return re.search(r'mp[\s]?i[^;(]*', func).group().strip()
+
+
 def remove_mpi_funcs(code, matches):
     for match in matches.keys():
         code = re.sub(rf'{match} [(](.*?)[)] ;', '', code)
@@ -51,7 +55,7 @@ def calc_tp_fp(ref_matches, cand_matches):
             p += 1
             if func in cand_matches:
                 for cand_match in cand_matches[func]:
-                    if abs(cand_match.span()[0]-ref_match_start) < 120:
+                    if abs(cand_match.span()[0]-ref_match_start) < 80:
                         matches += 1
                         tp[func] = (tp[func] if func in tp else 0) + 1
             else:
@@ -98,6 +102,10 @@ def metrics_calc(tp, tn, fn, fp):
 
 
 def conf_matrix(reference, candidate, metrics=False):
+    # ref_functions = list(re.finditer(r'mp[\s]?i[^;]*[(](.*?)[)][\s]?;', reference))
+    # cand_functions = list(re.finditer(r'mp[\s]?i[^;]*[(](.*?)[)][\s]?;', candidate))
+    # ref_pre_functions = [prefix_function(ref_func.group()) for ref_func in ref_functions]
+    # cand_pre_functions = [prefix_function(cand_func.group()) for cand_func in cand_functions]
     ref_matches, ref_counts = matcher(reference)
     cand_matches, cand_counts = matcher(candidate)
     tp, fp, fn, p = calc_tp_fp(ref_matches, cand_matches)
