@@ -41,6 +41,18 @@ If you found these codes useful for your research, please consider citing:
 
 
 ## Running
+### Configuration
+Change the paths in config.yaml file to the relevant paths:
+```
+REPOS_ORIGIN_DIR: '/home/yourname/MPI-rical/DB/git_repos'
+REPOS_MPI_DIR: '/home/yourname/MPI-rical/DB/repositories_MPI'
+PROGRAMS_MPI_DIR: '/home/yourname/MPI-rical/DB/programs'
+DB_DIR: '/home/yourname/MPI-rical/DB'
+MPI_DIR: '/home/yourname/MPI-rical/DB/MPI'
+MPI_SERIAL_DIR: '/home/yourname/MPI-rical/DB/MPI_SERIAL'
+MPI_SERIAL_HEURISTICS_DIR: '/home/yourname/MPI-rical/DB/MPI_SERIAL_HEURISTICS'
+MPI_SERIAL_PLACEHOLDER_DIR: '/home/yourname/MPI-rical/DB/MPI_SERIAL_PLACEHOLDER'
+```
 ### Evaluate
 To evaluate the models activate the SPTcode environment and enter the source folder: 
 ```
