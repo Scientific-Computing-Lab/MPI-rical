@@ -6,7 +6,7 @@ from config import exclude_headers, FORTRAN_EXTENSIONS
 
 
 def is_main(lines):
-    if re.search(r'int main[\s]*[(](.*?)[)]', lines, flags=re.IGNORECASE):
+    if re.search(r'main[\s]*[(](.*?)[)]', lines, flags=re.IGNORECASE):
         return True
     return False
 

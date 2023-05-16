@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import collections
 import matplotlib.pyplot as plt
 
@@ -48,27 +49,27 @@ def db_programs_generate():
     write_to_json(database, 'database_programs.json')
 
 
-def db_mpi_generate():
+def db_mpi_generate(db_path):
     database = {}
-    for idx, program_name in enumerate(os.listdir(MPI_DIR)):
-        program_dir = os.path.join(MPI_DIR, program_name)
+    for idx, program_name in enumerate(os.listdir(db_path)):
+        program_dir = os.path.join(db_path, program_name)
         ast_path = os.path.join(program_dir, 'ast.pkl')
         code_path = os.path.join(program_dir, 'code.c')
         database.update({program_name: {'ast': ast_path, 'code': code_path}})
         info(f'{idx}) programs have been added to database')
-    write_to_json(database, 'database_mpi.json')
+    write_to_json(database, 'database_mpi_benchmark.json')
 
 
-def db_mpi_serial_generate():
+def db_mpi_serial_generate(db_path):
     database = {}
-    for idx, program_name in enumerate(os.listdir(MPI_SERIAL_PLACEHOLDER_DIR)):
-        program_dir = os.path.join(MPI_SERIAL_PLACEHOLDER_DIR, program_name)
+    for idx, program_name in enumerate(os.listdir(db_path)):
+        program_dir = os.path.join(db_path, program_name)
         ast_path = os.path.join(program_dir, 'ast.pkl')
         code_path = os.path.join(program_dir, 're_code.c')
         mpi_code_path = os.path.join(program_dir, 'mpi_re_code.c')
         database.update({program_name: {'ast': ast_path, 'code': code_path, 'mpi_code': mpi_code_path}})
         info(f'{idx}) programs have been added to database')
-    write_to_json(database, '/home/nadavsc/LIGHTBITS/code2mpi/DB/database_mpi_serial_placeholder.json')
+    write_to_json(database, '/home/nadavsc/LIGHTBITS/code2mpi/DB/database_benchmark_mpi_serial_heuristics.json')
 
 
 def functions_chain_counter(db):
@@ -110,29 +111,6 @@ def draw_functions_hist(db):
     plt.title('Functions Distribution')
     plt.ylabel('Frequency')
     plt.savefig('/home/nadavsc/Desktop/functions.png', dpi=200)
-    # fig, ax = plt.subplots(1, 1)
-    # ax.set_title('Functions Distribution')
-    # ax.bar(keys[:30], values[:30])
-    # plt.setp(ax.get_xticklabels(), rotation=25, horizontalalignment='right')
-    # plt.show()
-
-    # ratios = []
-    # with open('/home/nadavsc/LIGHTBITS/code2mpi/stats/init_finalize.txt', 'r') as f:
-    #     stats = f.readlines()
-    # for line in stats:
-    #     try:
-    #         ratios.append(float(line[-5:]))
-    #     except:
-    #         print('string')
-    #
-    # plt.figure(figsize=(14, 7))  # Make it 14x7 inch
-    # plt.style.use('seaborn-whitegrid')  # nice and clean grid
-    # plt.hist(ratios, facecolor='#2ab0ff', edgecolor='#169acf', linewidth=0.5)
-    # plt.grid(False)
-    # plt.title('Init-Finalize Lines Ratio')
-    # plt.ylabel('Frequency')
-    # plt.xlabel('Init-Finalize to All Lines Ratio')
-    # plt.savefig('/home/nadavsc/Desktop/ratio.png', dpi=200)
 
 
 def line_count_stats(mpi_lines_count_db):
@@ -142,11 +120,24 @@ def line_count_stats(mpi_lines_count_db):
             count += 1
     print(count)
 
-# db_mpi_serial_generate()
+
+def init_finalize_ratio(logger):
+    def extract_ratio(logger):
+        dict = {}
+        ratios = [float(line[-6:-1]) for line in logger if 'Ratio' in line]
+        return {ratio: ratios.count(ratio) for ratio in ratios if ratio not in dict}
+    sum = 0
+    ratio_sums = []
+    ratios = extract_ratio(logger)
+    for i in np.around(np.arange(0.0, 1.01, 0.01), decimals=2):
+        sum += ratios[i]
+        if i % 0.1 >= 0.099 or i % 0.1 == 0 and i != 0:
+            ratio_sums.append((i - 0.1, sum))
+            sum = 0
+    return ratio_sums
+
+# db_mpi_generate(db_path='/home/nadavsc/LIGHTBITS/code2mpi/DB/BENCHMARK')
+# db_mpi_serial_generate(db_path='/home/nadavsc/LIGHTBITS/code2mpi/DB/BENCHMARK_MPI_SERIAL_HEURISTICS')
 
 # db = load_json(os.path.join('/home/nadavsc/LIGHTBITS/code2mpi/stats', 'mpi_funcs_per_file.json'))
 # draw_functions_hist(db)
-
-# training
-# eval_loss = [1.5359086990356445, 1.4974662065505981, 1.487998127937317, 1.4845249652862549, 1.4827420711517334, 1.4808318614959717, 1.4797585010528564, 1.479016900062561, 1.478766918182373, 1.4786592721939087]
-# eval_accuracy = [0.10205314009661835, 0.10909822866344605, 0.11493558776167472, 0.1143317230273752, 0.11332528180354268, 0.11694847020933978, 0.11694847020933978, 0.11372785829307569, 0.11634460547504026, 0.11694847020933978]

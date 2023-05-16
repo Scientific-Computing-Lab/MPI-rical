@@ -1,5 +1,6 @@
 import os
 import sys
+import pdb
 
 project_path = r'/home/nadavsc/LIGHTBITS/code2mpi'
 sys.path.append(project_path)
@@ -13,6 +14,7 @@ from pycparser import parse_file, c_generator
 from pathlib import Path
 
 from files_parse import Extractor, remove_comments, repo_parser
+from ast_parse import origin_funcs
 from files_handler import save_pkl, load_file, save_file
 from config import basic_fake_headers_path
 
@@ -20,7 +22,7 @@ from config import basic_fake_headers_path
 def re_code(ast_file, save_dir):
     generator = c_generator.CGenerator()
     with open(f'{save_dir}/re_code.c', 'w') as f:
-        f.write(generator.visit(ast_file.ext[-1]))
+        f.write(origin_funcs(generator.visit(ast_file.ext[-1])))
 
 
 def save(ast_file, code, re_gen, save_dir):
@@ -62,7 +64,6 @@ def ast(origin_folder, fake_headers_path, save_dir, re_gen=False):
     code, _, _ = load_file(main_path, load_by_line=False)
     code = fake_main_handler(code)
     fake_headers_handler(fake_headers_path, real_headers, main_path)
-
     program_dirs = [f'-I{os.path.join(root, dir)}' for (root, dirs, fnames) in os.walk(origin_folder) for dir in dirs]
     cpp_args = ["-E"] + ["-D__attribute__(x)="] + [f'-I{origin_folder}'] + program_dirs + [f"-I{basic_fake_headers_path}"] + [f"-I{fake_headers_path}"]
     ast_file = parse_file(main_path, use_cpp=True, cpp_path='mpicc', cpp_args=cpp_args)
@@ -86,9 +87,9 @@ if __name__ == "__main__":
     if fake_headers_path == '' or save_dir == '':
         fake_headers_path = origin_folder
         save_dir = origin_folder
-    c_ast(origin_folder=origin_folder,
-          fake_headers_path=fake_headers_path,
-          save_dir=save_dir,
-          re_gen=re_gen)
+    ast(origin_folder=origin_folder,
+        fake_headers_path=fake_headers_path,
+        save_dir=save_dir,
+        re_gen=re_gen)
 
 # mpicc -E -D'__attribute__(x)=' -Itest/lemon/check -Ipycparser/utils/fake_libc_include test/lemon/check/lemon_benchmark.c  > lemon_benchmark_pp.c

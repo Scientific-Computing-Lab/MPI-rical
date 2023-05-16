@@ -288,7 +288,7 @@ def MPI_to_serial(program, mode='place_holder'):
         print(f'success: {cur_success} | failure: {cur_fails} | fail ratio: {cur_fails / (cur_success + cur_fails):2f}')
         return
 
-    save_dir = os.path.join(MPI_SERIAL_PLACEHOLDER_DIR, program_name)
+    save_dir = os.path.join('/home/nadavsc/LIGHTBITS/code2mpi/DB/BENCHMARK_MPI_SERIAL_PLACEHOLDER', program_name)
     ast_save_path = os.path.join(save_dir, 'ast')
     os.mkdir(save_dir)
 
