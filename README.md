@@ -35,9 +35,40 @@ conda activate <env_name>
 Download the right packages according to the official SPT-Code github: https://github.com/NougatCA/SPT-Code
 
 
-# Citation
+## Citation
 For more information about the measures and their means of the implementations, please refer to the paper.
-If you found these codes useful for your research, please consider citing: 
+If you found these codes useful for your research, please consider citing: https://arxiv.org/abs/2305.09438
+
+## Dataset
+The corpus is located [here](https://drive.google.com/file/d/1lRTSbh9aitI4BdWxPI8reLpJV4WnlIWQ/view?usp=sharing)
+It contains folders in the following tree structure:
+```
+├── User1
+│   ├── Repository1
+│       ├── Program1
+│       ├── Program2
+│       └── Outputs
+│   └── Repository2
+│       ├── Program1
+│       └── Outputs
+├── User2
+│   ├── Repository1
+│       ├── Program1
+│       ├── Program2
+│       ├── Program3
+│       └── Outputs
+```
+1. **User** - The github's user.
+2. **Repository** - One of the repositories of the current user.
+3. **Program** - Contains one C main program and its headers files.
+4. **Outputs** - Contains main file after preprocess and main program's AST pickle file if AST has been successfully generated.
+
+
+Please note, that the pickle file can easily be created by wrapping code.c with a int main() {} and applying the pycparser parser.  
+
+In addition, the database contains a json file that maps the folders -- each key in the json file represents a corpus record: user name, repository name, a unique id for each program and its path.
+This json file can be recreated with the make/database.py script.
+The three mentioned dataset-subsets have been created using the corpus.
 
 
 ## Running
