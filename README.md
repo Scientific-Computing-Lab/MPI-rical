@@ -33,6 +33,15 @@ Then, activate your environment:
 conda activate <env_name>
 ```
 Download the right packages according to the official SPT-Code github: https://github.com/NougatCA/SPT-Code
+and the following packages inside code2mpi environment:
+```
+pycparser
+matplotlib
+scikit-learn==0.24.2
+scipy==1.7.3
+python==3.7
+```
+code2mpi is used to pre-process and analyze the data while SPTcode is used to train and evaluate the models.
 
 
 ## Citation
