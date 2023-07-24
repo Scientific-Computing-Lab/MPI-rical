@@ -1,21 +1,19 @@
 # MPI-rical: Data-Driven MPI Distributed Parallelism Assistance with Transformers
-Automatic source-to-source parallelization of serial code for shared and distributed memory systems is a challenging task in high-
-performance computing. While many attempts were made to trans-late serial code into parallel code for a shared memory environment - usually using OpenMP - none has managed to do so for a distributed memory environment. The evolving field of AI-based pro-gramming assistance tools, on the other hand, shows a promising direction that could offer an opportunity for developing a translator for serial code in distributed memory environment. In this paper, we propose a novel approach, called MPI-rical, for automated MPI code generation using a transformer-based model trained on approximately 25,000 serial code snippets (in C language) and their corresponding parallelized MPI code out of more than 50,000 code snippets in our corpus (MPICodeCorpus). In order to evaluate the performance of the model systematically, we first break down the serial code to MPI-based parallel code translation problem into two sub-problems and develop two research objectives: code completion defined as given a location in the source code, predict the MPI function for that location, and code translation defined as predicting an MPI function as well as its location in the source code. We evaluate MPI-rical on MPICodeCorpus dataset and on real-world scientific code benchmarks and compare its performance between the code completion and translation tasks. Our experimental results show
-that while MPI-rical performs better on the code completion task than the code translation task - with an F1-score of 0.95 against
-0.87 - the latter is better suited for real-world programming assistance, in which the tool suggests the need for an MPI function regardless of prior knowledge. Overall, our approach represents a significant step forward in automating the parallelization of serial
-code for distributed memory systems, which can save valuable time and resources for software developers and researchers.
+Automatic source-to-source parallelization of serial code for shared and distributed memory systems is a challenging task in high-performance computing.
+While many attempts were made to translate serial code into parallel code for a shared memory environment --- usually using OpenMP --- none has managed to do so for a distributed memory environment. The evolving field of AI-based programming assistance tools, on the other hand, shows a promising direction that could offer an opportunity for developing an assistance tool for writing distributed memory code.
+In this paper, we propose a novel approach, called MPI-rical, for inserting MPI functions using a transformer-based model trained on approximately 25,000 MPI code snippets (in C language) out of more than 50,000 code snippets in our corpus MPICodeCorpus.
+In order to evaluate the performance of the model systematically, we refer to inserting MPI functions into an MPI-based parallel code as a code translation problem: defined as predicting an MPI function as well as its location in a given source code.
+We evaluate MPI-rical on the MPICodeCorpus dataset, on real-world scientific code benchmarks, and even with our own compiled MPI numerical computations codes.
+Our experimental results show that MPI-rical achieves an F1 score on the MPI common functions of 0.89 on the dataset test and a score of 0.68 on the benchmark. Implying that there is an understanding of how to use MPI routines.
+Overall, our approach represents a significant step forward in advising MPI code through distributed memory systems writing, which can save valuable time and resources for software developers and researchers.
           
 ## Desired Objective  ##
 ![](images/objective.PNG)
-The desired objective, exemplified by a Pi calculation code: Advice a programmer who is writing serial code on which MPI functions to call and where to place those to transform the code to a distributed one. The MPI functions suggested by MPI-rical are highlighted in red on the right. Note that MPI-rical currently does not suggest arguments to MPI functions. We plan to explore this feature in future work.
+A data-oriented workflow of the MPI-rical system, exemplified by a distributed Pi calculation code: Given a corpus of MPI codes, a subset of the original dataset is created --- Removed - Locations [R-L] --- in which the MPI functions are replaced by a void and the original locations are not preserved. This is also done to the xSBT representations. Accordingly, the subset [R-L] is used to train a translation model, SPT-Code, which will eventually predict the desired MPI classification for new samples of codes given in those fashions. As such, MPI-rical is useful in easing the writing of MPI codes in IDEs.
 
 ## MPI-rical Training and Evaluation  ##
 ![](images/model.PNG)
-Overview of the model’s training and evaluation. Three dataset subsets are created from MPICodeCorpus. Each subset
-consists of three files constituting one example; MPI C code (label), Serial C code, and its AST. Our model, MPI-rical, which
-has three sub-models, one for each subset, trains and evaluates these examples. These models address the two tasks of code
-completion and code translation. MPI-rical’s models were pre-trained from the CodeSearchNet dataset.
-
+Overview of the model's training and evaluation. The dataset is created from MPICodeCorpus while three files constitute one example; MPI C code (label), MPI C code functions excluded, and its X-SBT (linearized AST). Our model, MPI-rical, trains and evaluates these examples. MPI-rical was pre-trained from the CodeSearchNet dataset.
 
 
 # Instructions
@@ -100,17 +98,9 @@ conda activate SPTcode
 cd Desktop/MPI-rical/SPT-Code/Source
 ```
 Then, run the following:
-* For evaluating code completion [P+L]:
-```
-python main.py --only-test --task completion --no-nl --batch-size 32 --max-code-len 320 --completion-max-len 320 --trained-vocab '/home/nadavsc/LIGHTBITS/SPT-Code/dataset/pre_trained/vocabs' --trained-model '/home/nadavsc/LIGHTBITS/SPT-Code/outputs/5_epochs_320_close_placeholder_completion/models'
-```
-* For evaluating Translation [P-L]:
+* For evaluating Translation [R-L]:
 ```
 python main.py --only-test --task translation --translation-source-language serial_c --translation-target-language mpi_c --no-nl --batch-size 32 --max-code-len 320 --trained-vocab '/home/nadavsc/LIGHTBITS/SPT-Code/dataset/pre_trained/vocabs' --trained-model '/home/nadavsc/LIGHTBITS/SPT-Code/outputs/5_epochs_320_close_placeholder_translation/models'
-```
-* For evaluating Translation [P-L+A]:
-```
-python main.py --only-test --task translation --translation-source-language serial_c --translation-target-language mpi_c --no-nl --batch-size 32 --max-code-len 320 --trained-vocab '/home/nadavsc/LIGHTBITS/SPT-Code/dataset/pre_trained/vocabs' --trained-model '/home/nadavsc/LIGHTBITS/SPT-Code/outputs/5_epochs_320_close_heuristics_translation/models'
 ```
 Make sure to insert the right paths of both the model itself and the pre trained vocabs.
 
