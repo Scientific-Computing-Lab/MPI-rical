@@ -97,10 +97,11 @@ To evaluate the models activate the SPTcode environment and enter the source fol
 conda activate SPTcode
 cd Desktop/MPI-rical/SPT-Code/Source
 ```
-Then, run the following:
+Download the MPI-rical model [here](https://drive.google.com/file/d/1usQHuqN7V0QbBx0VF23vNqmGgEQdsgmE/view?usp=drive_link).
+Move it to the SPT-code/outputs folder and then run the following:
 * For evaluating Translation [R-L]:
 ```
-python main.py --only-test --task translation --translation-source-language serial_c --translation-target-language mpi_c --no-nl --batch-size 32 --max-code-len 320 --trained-vocab '/home/nadavsc/LIGHTBITS/SPT-Code/dataset/pre_trained/vocabs' --trained-model '/home/nadavsc/LIGHTBITS/SPT-Code/outputs/5_epochs_320_close_placeholder_translation/models'
+python main.py --only-test --task translation --translation-source-language serial_c --translation-target-language mpi_c --no-nl --batch-size 32 --max-code-len 320 --trained-vocab '/home/nadavsc/LIGHTBITS/SPT-Code/dataset/pre_trained/vocabs' --trained-model '/home/nadavsc/LIGHTBITS/SPT-Code/outputs/5_epochs_320_translation/models'
 ```
 Make sure to insert the right paths of both the model itself and the pre trained vocabs.
 
