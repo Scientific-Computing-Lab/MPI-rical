@@ -39,7 +39,7 @@ code2mpi is used to pre-process and analyze the data while SPTcode is used to tr
 
 ## Citation
 For more information about the measures and their means of the implementations, please refer to the paper.
-If you found these codes useful for your research, please consider citing: https://arxiv.org/abs/2305.09438
+If you found these codes useful for your research, please consider citing: https://dl.acm.org/doi/abs/10.1145/3624062.3624063
 
 ## Dataset
 The corpus is located [here](https://drive.google.com/file/d/1lRTSbh9aitI4BdWxPI8reLpJV4WnlIWQ/view?usp=sharing)
